@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>FragPDF — Tous vos outils PDF, 100 % dans votre navigateur</title>
+  <meta name="description" content="Éditez, signez, fusionnez, divisez, compressez, convertissez et protégez vos PDF. Gratuit, sans envoi de fichier : tout reste sur votre appareil." />
+  <meta name="theme-color" content="#6d4aff" />
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+  <script>
+    (function () {
+      try {
+        var t = JSON.parse(localStorage.getItem('fragpdf.theme') || 'null');
+        if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+  <noscript>FragPDF nécessite JavaScript.</noscript>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
