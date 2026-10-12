@@ -1,5 +1,5 @@
-import * as pdfjs from 'pdfjs-dist';
-import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
+import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
@@ -12,7 +12,7 @@ export { pdfjs };
  * Ouvre un PDF avec pdf.js. Les octets sont copiés : pdf.js transfère le buffer au worker.
  * @returns {Promise<import('pdfjs-dist').PDFDocumentProxy>}
  */
-export function openPdf(bytes, password) {
+export async function openPdf(bytes, password) {
   const task = pdfjs.getDocument({
     data: bytes.slice(),
     password,
@@ -23,7 +23,10 @@ export function openPdf(bytes, password) {
     iccUrl: abs('pdfjs/iccs/'),
     isEvalSupported: false,
   });
-  return task.promise;
+  const doc = await task.promise;
+  // pdf.js 6 : la destruction passe par la tâche de chargement
+  doc.destroy = () => task.destroy();
+  return doc;
 }
 
 /** Détecte si un PDF est chiffré avec mot de passe utilisateur. */

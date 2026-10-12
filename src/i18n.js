@@ -19,7 +19,7 @@ export function setLang(l) {
 }
 export function initLang() {
   let l = 'fr';
-  try { l = localStorage.getItem('fragpdf.lang') || (navigator.language?.startsWith('en') ? 'en' : 'fr'); } catch { /* ignoré */ }
+  try { l = localStorage.getItem('fragpdf.lang') || 'fr'; } catch { /* ignoré */ }
   setLang(l);
 }
 export function t(s, vars) {

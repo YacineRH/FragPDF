@@ -49,3 +49,19 @@ export function gridPosition(pos, pw, ph, bw, bh, margin = 24) {
   const y = v === 'top' ? margin : v === 'bottom' ? ph - bh - margin : (ph - bh) / 2;
   return { x, y };
 }
+
+/** Inverse de geo.map : coordonnées utilisateur -> coordonnées visuelles. */
+export function unmapPoint(geo, ux, uy) {
+  const { box, rot } = geo;
+  switch (rot) {
+    case 90: return { x: uy - box.y, y: ux - box.x };
+    case 180: return { x: box.x + box.width - ux, y: uy - box.y };
+    case 270: return { x: box.y + box.height - uy, y: box.x + box.width - ux };
+    default: return { x: ux - box.x, y: box.y + box.height - uy };
+  }
+}
+
+export function userRectToVisual(geo, r) {
+  const a = unmapPoint(geo, r.x, r.y), b = unmapPoint(geo, r.x + r.width, r.y + r.height);
+  return { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) };
+}

@@ -19,7 +19,10 @@ export function themeToggle() {
   return btn;
 }
 
+// L'anglais n'est que partiellement traduit : le sélecteur reste masqué tant que la traduction n'est pas complète.
+export const LANG_SWITCH = false;
 export function langToggle() {
+  if (!LANG_SWITCH) return document.createComment('lang');
   const btn = h('button', { class: 'btn btn-sm btn-ghost', title: 'Langue / Language' }, getLang().toUpperCase());
   btn.addEventListener('click', () => { setLang(getLang() === 'fr' ? 'en' : 'fr'); location.reload(); });
   return btn;
