@@ -133,26 +133,33 @@ export class EditorState {
 
   async restore(snap) {
     const bytesChanged = snap.bytes !== this.bytes;
+    if (bytesChanged) await this.setBytes(snap.bytes);
     this.annots = structuredClone(snap.annots);
     this.formValues = new Map(snap.formValues);
     this.sel = new Set([...this.sel].filter((id) => this.annots.some((a) => a.id === id)));
-    if (bytesChanged) await this.setBytes(snap.bytes);
     this.dirty = true;
     this.emit('annots', { all: true });
     this.emit('selection');
     this.emit('history');
   }
 
-  async undo() {
-    if (!this.undoStack.length) return;
-    this.redoStack.push(this.snapshot());
-    await this.restore(this.undoStack.pop());
+  /** Sérialise undo / redo : un restore asynchrone doit être terminé avant le suivant. */
+  serial(fn) { this._q = (this._q || Promise.resolve()).then(fn, fn); return this._q; }
+
+  undo() {
+    return this.serial(async () => {
+      if (!this.undoStack.length) return;
+      this.redoStack.push(this.snapshot());
+      await this.restore(this.undoStack.pop());
+    });
   }
 
-  async redo() {
-    if (!this.redoStack.length) return;
-    this.undoStack.push(this.snapshot());
-    await this.restore(this.redoStack.pop());
+  redo() {
+    return this.serial(async () => {
+      if (!this.redoStack.length) return;
+      this.undoStack.push(this.snapshot());
+      await this.restore(this.redoStack.pop());
+    });
   }
 
   get canUndo() { return this.undoStack.length > 0; }

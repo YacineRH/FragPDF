@@ -75,7 +75,7 @@ export async function pdfToText(bytes, password) {
   return pages.map((lines, i) => `${lines.map((l) => l.text).join('\n')}`).join('\n\n\f\n');
 }
 
-const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const esc = (s) => s.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 /** PDF → DOCX (texte et titres détectés par la taille de police ; la mise en page n'est pas conservée). */
 export async function pdfToDocx(bytes, password) {

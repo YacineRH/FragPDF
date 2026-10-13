@@ -30,6 +30,8 @@ function gridTool(cfg) {
         const d = await loadPdfFile(files[0]);
         if (!d) return;
         doc = d;
+        pdf?.destroy();
+        thumbCache.clear();
         pdf = await openPdf(d.bytes);
         pages = Array.from({ length: d.pages }, (_, i) => ({ id: uid(), src: i, rotate: 0, selected: cfg.selectAll ?? false, removed: false }));
         render();
@@ -199,7 +201,7 @@ export const organize = gridTool({
   async save({ doc, pages, pm }) {
     if (!pages.length) throw new Error(t('Le document doit contenir au moins une page.'));
     pm.set(0.2);
-    const layout = pages.map((p) => (p.blank ? { blank: true } : { src: p.src, rotate: p.rotate }));
+    const layout = pages.map((p) => (p.blank ? { blank: true, like: p.src } : { src: p.src, rotate: p.rotate }));
     const bytes = await applyPageLayout(doc.bytes, layout);
     return { title: t('Document réorganisé !'), outputs: [{ name: fileName(doc, 'organisé'), data: bytes }], stats: [{ label: t('Pages'), value: String(pages.length) }] };
   },

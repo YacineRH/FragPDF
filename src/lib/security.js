@@ -27,7 +27,7 @@ async function run(args, input, { allowWarnings = true } = {}) {
 
 /** perms: {print:'full'|'low'|'none', copy:bool, modify:bool, annotate:bool} */
 export function encryptPdf(bytes, userPassword, ownerPassword, perms = {}) {
-  const owner = ownerPassword || userPassword + '·owner';
+  const owner = ownerPassword || Array.from(crypto.getRandomValues(new Uint8Array(18)), (b) => b.toString(16).padStart(2, '0')).join('');
   const args = [
     '--encrypt', userPassword, owner, '256',
     `--print=${perms.print ?? 'full'}`,

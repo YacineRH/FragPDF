@@ -95,7 +95,11 @@ async function recompressImages(bytes, level, onProgress) {
   const ctx = doc.context;
   const entries = ctx.enumerateIndirectObjects();
   let done = 0, replaced = 0;
+  // les masques /SMask doivent rester en niveaux de gris sans perte : on ne les touche pas
+  const masks = new Set();
+  for (const [, o] of entries) if (o instanceof PDFRawStream) { const sm = o.dict.get(N('SMask')); if (sm) masks.add(String(sm)); }
   for (const [ref, obj] of entries) {
+    if (masks.has(String(ref))) continue;
     done++;
     if (!(obj instanceof PDFRawStream)) continue;
     const dict = obj.dict;
@@ -106,7 +110,7 @@ async function recompressImages(bytes, level, onProgress) {
     const w = dict.get(N('Width'))?.asNumber?.(), h = dict.get(N('Height'))?.asNumber?.();
     if (!w || !h || w * h < 40000) continue; // ignore les petites images
     const comps = colorComponents(dict, ctx);
-    if (!comps) continue;
+    if (comps !== 1 && comps !== 3) continue; // CMYK et autres : laissés tels quels
     const filters = filtersOf(dict);
     let source = null;
     try {
@@ -114,7 +118,7 @@ async function recompressImages(bytes, level, onProgress) {
         source = await createImageBitmap(new Blob([obj.contents], { type: 'image/jpeg' }));
       } else if (filters.length === 1 && filters[0] === 'FlateDecode' && dict.get(N('BitsPerComponent'))?.asNumber?.() === 8) {
         let raw = await inflate(obj.contents);
-        const parms = dict.get(N('DecodeParms'));
+        const parms = dict.lookup(N('DecodeParms'));
         const pd = parms instanceof PDFDict ? parms : null;
         const pred = pd?.get(N('Predictor'))?.asNumber?.() ?? 1;
         if (pred >= 10) raw = unpredictPng(raw, w, comps);

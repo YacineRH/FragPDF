@@ -320,6 +320,7 @@ export async function mount(root, { query }) {
     if (mod && key === 's') { e.preventDefault(); if (state.pdf) openExportDialog(); return; }
     if (mod && key === 'f') { e.preventDefault(); if (state.pdf) find.open(); return; }
     if (mod && key === 'o') { e.preventDefault(); openFilePicker(); return; }
+    if (mod && key === 'p') { e.preventDefault(); if (state.pdf) run(printDoc); return; }
     if (typing(e)) return;
     if (mod && key === 'z') { e.preventDefault(); e.shiftKey ? state.redo() : state.undo(); return; }
     if (mod && key === 'y') { e.preventDefault(); state.redo(); return; }
@@ -330,7 +331,7 @@ export async function mount(root, { query }) {
       if (key === 'x') removeSelection();
       return;
     }
-    if (mod && key === 'v' && state.clipboard.length && !e.__imagePaste) { pasteClipboard(); return; }
+    if (mod && key === 'v' && state.clipboard.length) { pasteClipboard(); internalPaste = true; return; }
     if (mod) return;
     if (key === 'escape') { if (state.tool !== 'select') state.setTool('select'); else state.setSelection([]); return; }
     if ((key === 'delete' || key === 'backspace') && state.sel.size) { e.preventDefault(); removeSelection(); return; }
@@ -376,7 +377,9 @@ export async function mount(root, { query }) {
   cleanups.push(() => window.removeEventListener('keydown', onKey));
 
   // collage d'image
+  let internalPaste = false;
   const onPaste = (e) => {
+    if (internalPaste) { internalPaste = false; return; } // déjà collé depuis le presse-papiers interne
     if (typing(e) || !state.pdf) return;
     const f = [...(e.clipboardData?.files || [])].find((x) => isImage(x));
     if (f) { e.preventDefault(); run(() => placeImageAt(f)); }
@@ -441,7 +444,7 @@ export async function mount(root, { query }) {
       h('div', { class: 'menu-sep' }),
       have ? mk('files', t('Insérer un PDF après la page courante…'), insertPdfDialog) : null,
       have ? mk('check', t('Appliquer les modifications au document'), bakeChanges) : null,
-      have ? mk('flatten', t('Aplatir les champs de formulaire'), async () => { const { flattenForms } = await import('../lib/pdf-ops.js'); const bytes = await flattenForms(state.bytes); state.checkpoint(); state.formValues.clear(); await state.setBytes(bytes); toast(t('Formulaires aplatis.'), 'success'); }) : null,
+      have ? mk('flatten', t('Aplatir les champs de formulaire'), async () => { const bytes = await exportPdf(state, { flattenForms: true }); state.checkpoint(); state.annots = []; state.sel = new Set(); state.formValues = new Map(); await state.setBytes(bytes); state.emit('annots', { all: true }); state.dirty = true; toast(t('Formulaires aplatis.'), 'success'); }) : null,
       have ? mk('eye', t('Imprimer…'), printDoc, 'Ctrl+P') : null,
       have ? h('div', { class: 'menu-sep' }) : null,
       have ? h('div', { class: 'menu-label' }, t('Utiliser un outil sur ce document')) : null,

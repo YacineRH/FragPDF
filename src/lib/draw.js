@@ -26,7 +26,10 @@ export function wrapText(font, text, size, maxW) {
       } else {
         if (/^\s+$/.test(tok)) { lines.push(cur); cur = ''; continue; }
         lines.push(cur.replace(/\s+$/, ''));
-        cur = tok;
+        cur = '';
+        if (measure(tok) > maxW) {
+          for (const ch of tok) { if (measure(cur + ch) > maxW && cur) { lines.push(cur); cur = ch; } else cur += ch; }
+        } else cur = tok;
       }
     }
     lines.push(cur);

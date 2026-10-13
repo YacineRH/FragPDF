@@ -6,7 +6,7 @@ import { createFontEmbedder } from './fonts.js';
 import { pageGeometry, gridPosition } from './geometry.js';
 import { drawTextBlock, wrapText, color } from './draw.js';
 import * as PDFLib from 'pdf-lib';
-import { rasterizeImage } from './utils.js';
+import { rasterizeImage, jpegOrientation } from './utils.js';
 
 export const PRODUCER = 'FragPDF';
 
@@ -70,21 +70,33 @@ function copyInfo(src, out) {
   } catch { /* ignoré */ }
 }
 
-/** Réorganise : layout = [{src, rotate?}|{blank:true,w,h}] */
+/**
+ * Réorganise en place (conserve formulaires, signets, métadonnées) :
+ * layout = [{src, rotate?}|{blank:true, like?:indexDePageVoisine, w?, h?}]
+ */
 export async function applyPageLayout(bytes, layout) {
-  const src = await loadDoc(bytes);
-  const out = await PDFDocument.create();
-  copyInfo(src, out);
-  for (const item of layout) {
-    if (item.blank) {
-      out.addPage([item.w || 595.28, item.h || 841.89]);
+  const doc = await loadDoc(bytes);
+  const orig = doc.getPages();
+  const sizes = orig.map((p) => { const g = pageGeometry(p); return [g.w, g.h]; });
+  const used = new Set();
+  const items = [];
+  for (const it of layout) {
+    if (it.blank) { items.push({ it }); continue; }
+    if (!used.has(it.src)) { used.add(it.src); items.push({ it, page: orig[it.src] }); continue; }
+    const [copy] = await doc.copyPages(doc, [it.src]); // doublon : copie du document dans lui-même
+    items.push({ it, page: copy });
+  }
+  for (let i = orig.length - 1; i >= 0; i--) doc.removePage(i);
+  for (const { it, page } of items) {
+    if (it.blank) {
+      const s = it.w ? [it.w, it.h] : sizes[it.like ?? 0] || [595.28, 841.89];
+      doc.addPage(s);
       continue;
     }
-    const [p] = await out.copyPages(src, [item.src]);
-    if (item.rotate) p.setRotation(degrees(((p.getRotation().angle + item.rotate) % 360 + 360) % 360));
-    out.addPage(p);
+    if (it.rotate) page.setRotation(degrees(((page.getRotation().angle + it.rotate) % 360 + 360) % 360));
+    doc.addPage(page);
   }
-  return save(out);
+  return save(doc);
 }
 
 /** Découpe : groupes d'indices -> tableau de PDF. */
@@ -159,7 +171,7 @@ export async function stampText(bytes, o) {
   for (const i of idx) {
     const page = doc.getPage(i);
     const geo = pageGeometry(page);
-    const n = (o.startAt ?? 1) + k;
+    const n = o.absolute ? i + 1 : (Number.isFinite(o.startAt) ? o.startAt : 1) + k;
     k++;
     const text = fillTokens(o.text, { n, total, date, title: doc.getTitle(), file: o.fileName });
     const font = await fonts.embed(o.fontId || 'helvetica', !!o.bold, !!o.italic, text);
@@ -201,7 +213,7 @@ export async function stampImage(bytes, imgBytes, mime, o) {
     const iw = (geo.w * (o.scale ?? 0.5));
     const ih = iw * (img.height / img.width);
     const pos = o.position === 'center' || !o.position ? { x: (geo.w - iw) / 2, y: (geo.h - ih) / 2 } : gridPosition(o.position, geo.w, geo.h, iw, ih, o.margin ?? 24);
-    const pl = geo.placeBox(pos.x, pos.y, iw, ih, o.rotation || 0);
+    const pl = geo.placeBox(pos.x, pos.y, iw, ih, -(o.rotation || 0)); // rotation positive = anti-horaire, comme l'aperçu
     page.drawImage(img, { x: pl.x, y: pl.y, width: iw, height: ih, rotate: degrees(pl.angle), opacity: o.opacity ?? 0.5 });
   }
   return save(doc);
@@ -255,7 +267,7 @@ export async function sanitize(bytes, o = {}) {
     doc.catalog.delete(PDFName.of('OpenAction'));
     doc.catalog.delete(PDFName.of('AA'));
     const names = doc.catalog.lookupMaybe(PDFName.of('Names'), PDFDict);
-    if (names) { names.delete(PDFName.of('JavaScript')); names.delete(PDFName.of('EmbeddedFiles')); }
+    if (names) names.delete(PDFName.of('JavaScript'));
     for (const p of doc.getPages()) {
       const annots = p.node.lookupMaybe(PDFName.of('Annots'), PDFArray);
       if (!annots) continue;
@@ -293,7 +305,7 @@ export async function imagesToPdf(files, o = {}) {
     let bytes = new Uint8Array(await f.arrayBuffer());
     let img;
     const type = f.type;
-    if (type === 'image/jpeg') img = await doc.embedJpg(bytes);
+    if (type === 'image/jpeg' && jpegOrientation(bytes) <= 1) img = await doc.embedJpg(bytes);
     else if (type === 'image/png') img = await doc.embedPng(bytes);
     else {
       bytes = await rasterizeImage(f, 'image/png');

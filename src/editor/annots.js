@@ -648,7 +648,9 @@ export class AnnotManager {
     const x = Math.min(s.x, c.x), y = Math.min(s.y, c.y), w = Math.abs(c.x - s.x), hh = Math.abs(c.y - s.y);
     const pageW = st.pages[d.page].w;
     let ann = null;
+    const redoBackup = st.redoStack;
     st.checkpoint();
+    const abort = () => { st.undoStack.pop(); st.redoStack = redoBackup; st.emit('history'); };
     switch (tool) {
       case 'text': case 'note': {
         const isNote = tool === 'note';
@@ -667,7 +669,7 @@ export class AnnotManager {
         ann = st.addAnnot({ type: tool, page: d.page, ...(d.moved && w > 3 && hh > 3 ? { x, y, w, h: hh } : { x: s.x - 60, y: s.y - 40, w: 120, h: 80 }), ...o.shape });
         break;
       case 'line': case 'arrow':
-        if (!d.moved) { st.undoStack.pop(); return; }
+        if (!d.moved) { abort(); return; }
         {
           let { x: x2, y: y2 } = c;
           if (e.shiftKey) { const ang = Math.round(Math.atan2(y2 - s.y, x2 - s.x) / (Math.PI / 4)) * (Math.PI / 4); const len = Math.hypot(x2 - s.x, y2 - s.y); x2 = s.x + len * Math.cos(ang); y2 = s.y + len * Math.sin(ang); }
@@ -702,7 +704,7 @@ export class AnnotManager {
       }
       case 'image': case 'sign': {
         const pl = this.state.placing;
-        if (!pl) { st.undoStack.pop(); return; }
+        if (!pl) { abort(); return; }
         const aspect = pl.w / pl.h;
         let bw, bh;
         if (d.moved && w > 12) { bw = w; bh = bw / aspect; } else { bw = Math.min(pl.defaultW || 200, pageW * 0.6); bh = bw / aspect; }
@@ -713,7 +715,7 @@ export class AnnotManager {
       }
       default: break;
     }
-    if (!ann) { st.undoStack.pop(); return; }
+    if (!ann) { abort(); return; }
     const keep = ['ink', 'whiteout', 'redact', 'highlightbox'].includes(tool);
     if (!keep) st.setTool('select');
     if (ann && !keep) st.setSelection([ann.id]);

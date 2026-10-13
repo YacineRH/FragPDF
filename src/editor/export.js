@@ -7,6 +7,7 @@ import { pageGeometry } from '../lib/geometry.js';
 import { color, wrapText, drawTextBlock } from '../lib/draw.js';
 import { loadDoc, PRODUCER } from '../lib/pdf-ops.js';
 import { renderPageToCanvas, pdfjs } from '../lib/pdfjs.js';
+import { bboxOf } from './annots.js';
 import { canvasToBlob } from '../lib/utils.js';
 
 const rotPoint = (px, py, cx, cy, deg) => {
@@ -23,7 +24,7 @@ function pathFromVisual(geo, pts, closed = true) {
 
 function svgOpts(o) {
   const out = { x: 0, y: 0 };
-  if (o.fill) { out.color = color(o.fill); out.opacity = o.fillOpacity ?? 1; }
+  if (o.fill) { out.color = color(o.fill); out.opacity = (o.fillOpacity ?? 1) * (o.opacity ?? 1); }
   if (o.stroke && o.strokeW > 0) {
     out.borderColor = color(o.stroke);
     out.borderWidth = o.strokeW;
@@ -132,10 +133,12 @@ async function applyForm(doc, state, flatten) {
       else if (type === 'PDFDropdown' || type === 'PDFOptionList') { if (val) field.select(String(val)); }
     } catch { /* valeur non applicable */ }
   }
-  try {
-    const f = await doc.embedFont(PDFLib.StandardFonts.Helvetica);
-    form.updateFieldAppearances(f);
-  } catch { /* ignoré */ }
+  if (state.formValues.size) {
+    try {
+      const f = await doc.embedFont(PDFLib.StandardFonts.Helvetica);
+      form.updateFieldAppearances(f);
+    } catch { /* ignoré */ }
+  }
   if (flatten) { try { form.flatten(); } catch { /* ignoré */ } }
 }
 
@@ -165,7 +168,13 @@ export async function exportPdf(state, { flattenForms = false, onProgress } = {}
     const page = doc.getPage(pi);
     const geo = pageGeometry(page);
 
+    const zones = list.filter((x) => x.type === 'redact');
+    const touches = (a) => {
+      const boxes = a.type === 'text' ? [{ x: a.x, y: a.y, w: a.w, h: a.h || a.size * 1.25 }, ...(a.covers || [])] : [bboxOf(a)];
+      return boxes.some((b) => zones.some((z) => b.x < z.x + z.w && b.x + b.w > z.x && b.y < z.y + z.h && b.y + b.h > z.y));
+    };
     for (const a of list) {
+      if (zones.length && a.type !== 'redact' && touches(a)) continue; // jamais d'objet par-dessus un caviardage
       const op = a.opacity ?? 1;
       switch (a.type) {
         case 'text': {
@@ -179,7 +188,7 @@ export async function exportPdf(state, { flattenForms = false, onProgress } = {}
           const lh = a.size * (a.lineHeight || 1.25);
           if (a.bg) {
             const c = boxCorners({ x: a.x, y: a.y, w: a.w, h: lines.length * lh, rot: a.rot });
-            page.drawSvgPath(pathFromVisual(geo, c), { x: 0, y: 0, color: color(a.bg), opacity: a.bgOpacity ?? 1 });
+            page.drawSvgPath(pathFromVisual(geo, c), { x: 0, y: 0, color: color(a.bg), opacity: (a.bgOpacity ?? 1) * op });
           }
           drawTextBlock(page, geo, font, lines, { x: a.x, y: a.y, w: a.w, size: a.size, lineHeight: a.lineHeight || 1.25, align: a.align, deg: a.rot || 0, color: a.color, opacity: op, underline: a.underline });
           break;
@@ -257,8 +266,9 @@ export async function exportPdf(state, { flattenForms = false, onProgress } = {}
         case 'link': {
           const r = geo.rect(a.x, a.y, a.w, a.h);
           const ctx = doc.context;
-          const action = a.url?.startsWith('#page=')
-            ? { Dest: [doc.getPage(Math.max(0, Math.min(total - 1, parseInt(a.url.slice(6), 10) - 1))).ref, PDFName.of('Fit')] }
+          const pn = parseInt(String(a.url || '').slice(6), 10);
+          const action = a.url?.startsWith('#page=') && Number.isFinite(pn)
+            ? { Dest: [doc.getPage(Math.max(0, Math.min(total - 1, pn - 1))).ref, PDFName.of('Fit')] }
             : { A: ctx.obj({ Type: 'Action', S: 'URI', URI: PDFString.of(a.url || '') }) };
           const annot = ctx.obj({ Type: 'Annot', Subtype: 'Link', Rect: [r.x, r.y, r.x + r.width, r.y + r.height], Border: [0, 0, 0], F: 4, ...action });
           const ref = ctx.register(annot);

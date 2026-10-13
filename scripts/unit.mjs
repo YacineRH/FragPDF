@@ -16,6 +16,7 @@ test('parsePageRanges', () => {
   assert.deepEqual(parsePageRanges('3-1', 5), [2, 1, 0]);
   assert.deepEqual(parsePageRanges('2 4;6', 6), [1, 3, 5]);
   assert.deepEqual(parsePageRanges('0, 11, 4', 10), [3]); // hors plage ignoré
+  assert.deepEqual(parsePageRanges('3 - 5', 10), [2, 3, 4]); // espaces autour du tiret
   assert.throws(() => parsePageRanges('a-b', 10), /invalide/);
 });
 
@@ -83,6 +84,8 @@ test('wrapText : aucune ligne ne dépasse la largeur, le texte est conservé', (
   for (const l of lines) assert.ok(font.widthOfTextAtSize(l, 10) <= 100 + 1e-9, `trop large : « ${l} »`);
   assert.equal(lines.join('').replace(/\s/g, ''), text.replace(/\s/g, ''));
   assert.deepEqual(wrapText(font, 'a\n\nb', 10, 0), ['a', '', 'b']);
+  const long = wrapText(font, 'hello https://example.com/a/very/long/url/that/exceeds', 10, 60);
+  for (const l of long) assert.ok(font.widthOfTextAtSize(l, 10) <= 60 + 1e-9, `mot long non coupé : « ${l} »`);
 });
 
 test('wordDiff', () => {

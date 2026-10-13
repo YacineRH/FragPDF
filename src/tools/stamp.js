@@ -167,9 +167,9 @@ function textStampTool({ kind }) {
           if (kind === 'numbers') {
             const idx = base.indices ?? Array.from({ length: f.pages }, (_, i) => i);
             const list = skipFirst.input.checked ? idx.filter((i) => i !== 0) : idx;
-            return { ...base, text: formatSel.value === 'custom' ? text.value : formatSel.value, indices: list, startAt: +startAt.value || 1 };
+            return { ...base, text: formatSel.value === 'custom' ? text.value : formatSel.value, indices: list, startAt: Number.isFinite(+startAt.value) && startAt.value !== '' ? +startAt.value : 1 };
           }
-          if (kind === 'headerfooter') return { ...base, text: text.value };
+          if (kind === 'headerfooter') return { ...base, text: text.value, absolute: true };
           if (mode.get() === 'image') return { ...base, image: true, rotation: +rotation.input.value, scale: +imgScale.input.value / 100, imgFile: imgInput.files[0] };
           return { ...base, text: text.value, rotation: +rotation.input.value, tile: tile.input.checked };
         },

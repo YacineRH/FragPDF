@@ -41,6 +41,17 @@ export function rotateAnnot(a, W, H, deg) {
   void swap;
 }
 
+/** Remappe les liens internes (#page=N, 1-based) ; fn reçoit l'index 0-based et renvoie le nouveau (ou null = lien cassé). */
+function remapLinks(state, fn) {
+  for (const a of state.annots) {
+    if (a.type !== 'link' || !String(a.url || '').startsWith('#page=')) continue;
+    const n = parseInt(a.url.slice(6), 10) - 1;
+    if (!Number.isFinite(n)) continue;
+    const m = fn(n);
+    a.url = m === null || m === undefined ? '#page=1' : `#page=${m + 1}`;
+  }
+}
+
 async function commit(state, bytes, mutateAnnots) {
   state.checkpoint();
   mutateAnnots?.();
@@ -65,6 +76,7 @@ export async function deletePage(state, indices) {
     const sorted = [...set].sort((a, b) => a - b);
     state.annots = state.annots.filter((a) => !set.has(a.page));
     state.annots.forEach((a) => { a.page -= sorted.filter((d) => d < a.page).length; });
+    remapLinks(state, (n) => (set.has(n) ? null : n - sorted.filter((d) => d < n).length));
     state.sel = new Set();
   });
 }
@@ -87,6 +99,7 @@ export async function reorderPages(state, order, extraRotate = {}) {
     });
     state.annots = out;
     state.sel = new Set();
+    remapLinks(state, (n) => { const k = order.indexOf(n); return k < 0 ? null : k; });
   });
 }
 
@@ -108,7 +121,7 @@ export async function insertBlank(state, at) {
   const ref = state.pages[Math.min(Math.max(at - 1, 0), state.pages.length - 1)];
   doc.insertPage(at, [ref.w, ref.h]);
   const bytes = await save(doc);
-  await commit(state, bytes, () => { state.annots.forEach((a) => { if (a.page >= at) a.page += 1; }); });
+  await commit(state, bytes, () => { state.annots.forEach((a) => { if (a.page >= at) a.page += 1; }); remapLinks(state, (n) => (n >= at ? n + 1 : n)); });
 }
 
 export async function insertPdf(state, otherBytes, at) {
@@ -118,7 +131,7 @@ export async function insertPdf(state, otherBytes, at) {
   pages.forEach((p, k) => doc.insertPage(at + k, p));
   const bytes = await save(doc);
   const n = pages.length;
-  await commit(state, bytes, () => { state.annots.forEach((a) => { if (a.page >= at) a.page += n; }); });
+  await commit(state, bytes, () => { state.annots.forEach((a) => { if (a.page >= at) a.page += n; }); remapLinks(state, (m) => (m >= at ? m + n : m)); });
   return n;
 }
 

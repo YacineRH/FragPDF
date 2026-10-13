@@ -165,6 +165,26 @@ await test('caviardage automatique (e-mail, téléphone, IBAN, carte)', async ()
   const txt = (await textOfBytes(await exportBytes()))[0];
   ok(!/example\.com|06 12|FR76|4111/.test(txt), 'données encore présentes : ' + txt);
 });
+await test('caviardage : une annotation posée dessus n’est pas exportée', async () => {
+  await openEditor('sensitive.pdf');
+  await page.evaluate(() => {
+    const { state } = window.__fragpdf;
+    state.addAnnot({ type: 'text', page: 0, x: 50, y: 120, w: 300, h: 20, text: 'SECRET-ANNOTE', fontId: 'helvetica', size: 14, color: '#000', align: 'left', opacity: 1, lineHeight: 1.25 }, { select: false });
+    state.addAnnot({ type: 'redact', page: 0, x: 40, y: 110, w: 330, h: 40 }, { select: false });
+  });
+  const txt = (await textOfBytes(await exportBytes()))[0];
+  ok(!txt.includes('SECRET-ANNOTE'), 'texte posé sous un caviardage : ' + txt);
+});
+await test('formulaire : aplatir conserve les saisies ; déplacer une page garde les champs', async () => {
+  await openEditor('form.pdf');
+  const inputs = await page.$$('.form-field');
+  await inputs[0].fill('Durand');
+  await page.click('.ed-top .btn:has-text("Fichier")');
+  await page.click('.menu-item:has-text("Aplatir les champs")');
+  await page.waitForFunction(() => window.__fragpdf.state.formValues.size === 0 && window.__fragpdf.state.version > 1);
+  const txt = (await textOfBytes(await exportBytes()))[0];
+  ok(txt.includes('Durand'), 'saisie perdue : ' + txt);
+});
 await test('formulaire : valeurs écrites', async () => {
   await openEditor('form.pdf');
   const inputs = await page.$$('.form-field');

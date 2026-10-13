@@ -257,7 +257,7 @@ export class TextEditTool {
     });
     void bg;
     st.setSelection([ann.id]);
-    requestAnimationFrame(() => this.annots.startEdit(ann.id, false));
+    requestAnimationFrame(() => this.annots.startEdit(ann.id, false, true));
     return ann;
   }
 }

@@ -49,6 +49,25 @@ export function downloadBlob(data, filename, type = 'application/octet-stream') 
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
+/** Orientation EXIF d'un JPEG (1 = normale). */
+export function jpegOrientation(bytes) {
+  if (bytes[0] !== 0xff || bytes[1] !== 0xd8) return 1;
+  let p = 2;
+  while (p + 4 < bytes.length && bytes[p] === 0xff) {
+    const marker = bytes[p + 1], len = (bytes[p + 2] << 8) | bytes[p + 3];
+    if (marker === 0xe1 && String.fromCharCode(...bytes.subarray(p + 4, p + 8)) === 'Exif') {
+      const t = p + 10, le = bytes[t] === 0x49;
+      const u16 = (o) => (le ? bytes[t + o] | (bytes[t + o + 1] << 8) : (bytes[t + o] << 8) | bytes[t + o + 1]);
+      const u32 = (o) => (le ? (u16(o) | (u16(o + 2) << 16)) >>> 0 : ((u16(o) << 16) | u16(o + 2)) >>> 0);
+      const ifd = u32(4), n = u16(ifd);
+      for (let i = 0; i < n; i++) if (u16(ifd + 2 + i * 12) === 0x0112) return u16(ifd + 2 + i * 12 + 8);
+      return 1;
+    }
+    p += 2 + len;
+  }
+  return 1;
+}
+
 export function readFileBytes(file) {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -124,7 +143,7 @@ export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 /** Parse "1-3, 5, 8-" en liste d'indices 0-based (dédupliqués, ordre conservé). */
 export function parsePageRanges(str, total) {
   const out = [];
-  const parts = String(str).split(/[,;\s]+/).filter(Boolean);
+  const parts = String(str).replace(/\s*-\s*/g, '-').split(/[,;\s]+/).filter(Boolean);
   for (const p of parts) {
     const m = p.match(/^(\d*)\s*-\s*(\d*)$/);
     if (m) {

@@ -1,5 +1,5 @@
 // Import d'images : normalisation en PNG/JPEG, réduction éventuelle, enregistrement comme « asset ».
-import { loadImage, canvasToBlob, dataURLToBytes } from '../lib/utils.js';
+import { loadImage, canvasToBlob, dataURLToBytes, jpegOrientation } from '../lib/utils.js';
 
 const MAX_DIM = 2600;
 
@@ -10,9 +10,10 @@ export async function imageFromBlob(blob) {
     const nw = img.naturalWidth || 300, nh = img.naturalHeight || 150;
     const k = Math.min(1, MAX_DIM / Math.max(nw, nh));
     const isJpeg = blob.type === 'image/jpeg';
-    // JPEG/PNG de taille raisonnable : on garde les octets d'origine
-    if ((isJpeg || blob.type === 'image/png') && k === 1) {
-      const bytes = new Uint8Array(await blob.arrayBuffer());
+    // JPEG/PNG de taille raisonnable : on garde les octets d'origine (sauf JPEG avec orientation EXIF : redessiné)
+    const raw = isJpeg || blob.type === 'image/png' ? new Uint8Array(await blob.arrayBuffer()) : null;
+    if (raw && k === 1 && (!isJpeg || jpegOrientation(raw) <= 1)) {
+      const bytes = raw;
       return { bytes, mime: blob.type, url: URL.createObjectURL(new Blob([bytes], { type: blob.type })), w: nw, h: nh };
     }
     const c = document.createElement('canvas');
