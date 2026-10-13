@@ -6,6 +6,7 @@ import { t } from '../i18n.js';
 import { makeDropzone, loadPdfFile, firstPageThumb } from '../lib/ingest.js';
 import { openPdf, renderPageToCanvas } from '../lib/pdfjs.js';
 import { groupLines } from '../lib/convert.js';
+import { wordDiff } from '../lib/diff.js';
 import { progressModal } from '../ui/modal.js';
 import { toastError } from '../ui/toast.js';
 
@@ -14,23 +15,6 @@ const SCALE = 1.3;
 async function pageText(page) {
   const tc = await page.getTextContent();
   return groupLines(tc.items).map((l) => l.text).join(' ').split(/\s+/).filter(Boolean);
-}
-
-/** Diff de mots (plus longue sous-séquence commune) — borné pour rester rapide. */
-export function wordDiff(a, b) {
-  if (a.length * b.length > 4e6) return null;
-  const n = a.length, m = b.length;
-  const dp = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
-  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
-  const out = [];
-  let i = 0, j = 0;
-  while (i < n && j < m) {
-    if (a[i] === b[j]) { out.push(['=', a[i]]); i++; j++; }
-    else if (dp[i + 1][j] >= dp[i][j + 1]) out.push(['-', a[i++]]); else out.push(['+', b[j++]]);
-  }
-  while (i < n) out.push(['-', a[i++]]);
-  while (j < m) out.push(['+', b[j++]]);
-  return out;
 }
 
 export const compare = {

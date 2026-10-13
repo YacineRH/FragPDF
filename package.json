@@ -8,7 +8,9 @@
     "preview": "vite preview --host",
     "test:e2e": "node scripts/e2e.mjs",
     "predev": "node scripts/copy-assets.mjs",
-    "prebuild": "node scripts/copy-assets.mjs"
+    "prebuild": "node scripts/copy-assets.mjs",
+    "test:unit": "node --import ./scripts/register-loader.mjs --test scripts/unit.mjs",
+    "test": "npm run test:unit && npm run build && npm run test:smoke && npm run test:e2e"
   },
   "repository": {
     "type": "git",

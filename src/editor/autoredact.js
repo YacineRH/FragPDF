@@ -16,7 +16,7 @@ export const KINDS = {
   email: { label: 'E-mails', re: /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi },
   phone: { label: 'Téléphones', re: /(?:\+|00)\d{1,3}[\s.-]?\(?\d\)?(?:[\s.-]?\d{2,3}){3,4}|\b0[1-9](?:[\s.-]?\d{2}){4}\b/g },
   iban: { label: 'IBAN', re: /\b[A-Z]{2}\d{2}(?:\s?[A-Z0-9]{4}){2,7}(?:\s?[A-Z0-9]{1,4})?\b/g },
-  card: { label: 'Cartes bancaires', re: /\b(?:\d[ -]?){13,19}\b/g, validate: (m) => { const d = m.replace(/\D/g, ''); return d.length >= 13 && d.length <= 19 && luhn(d); } },
+  card: { label: 'Cartes bancaires', re: /\b\d(?:[ -]?\d){12,18}\b/g, validate: (m) => { const d = m.replace(/\D/g, ''); return d.length >= 13 && d.length <= 19 && luhn(d); } },
   ssn: { label: 'N° de sécurité sociale', re: /\b[12]\s?\d{2}\s?(?:0[1-9]|1[0-2])\s?\d{2}\s?\d{3}\s?\d{3}(?:\s?\d{2})?\b/g },
   url: { label: 'Adresses web', re: /\bhttps?:\/\/[^\s]+|\bwww\.[^\s]+/gi },
 };
