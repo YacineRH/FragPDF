@@ -183,3 +183,4 @@
   .ed-top .pager, .ed-name { display: none; }
   .pages { padding: 12px 8px 80px; }
 }
+.sidebar-scroll.busy { cursor: progress; opacity: .6; pointer-events: none; transition: opacity .15s; }

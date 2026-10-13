@@ -6,7 +6,7 @@ import { pdfjs } from '../lib/pdfjs.js';
 const ASC = 0.905, DESC = 0.212;
 const BASELINE_OFFSET = (1.25 - (ASC + DESC)) / 2 + ASC; // ≈ 0.9635 × taille
 
-export function guessFont(fontName = '', fontObj = {}) {
+export function guessFont(fontName = '', fontObj = {}, family = '') {
   const raw = String(fontObj.name || fontName || '').replace(/^[A-Z]{6}\+/, '');
   const n = raw.toLowerCase();
   const bold = !!fontObj.bold || /bold|black|heavy|semibold|demi|extrabold/.test(n);
@@ -15,8 +15,8 @@ export function guessFont(fontName = '', fontObj = {}) {
   const named = [['inter', 'inter'], ['roboto mono', 'roboto-mono'], ['robotomono', 'roboto-mono'], ['roboto', 'roboto'], ['montserrat', 'montserrat'], ['lora', 'lora'], ['playfair', 'playfair-display'], ['caveat', 'caveat'], ['dancing', 'dancing-script'], ['pacifico', 'pacifico']];
   const hit = named.find(([k]) => n.includes(k));
   if (hit) fontId = hit[1];
-  else if (/courier|mono|consolas|menlo|typewriter|lucida console|andale/.test(n) || fontObj.isMonospace) fontId = 'courier';
-  else if ((/times|serif|georgia|garamond|palatino|minion|cambria|bookman|baskerville|century|didot|bodoni/.test(n) && !/sans/.test(n)) || (fontObj.isSerifFont && !/arial|helvetica|calibri|verdana|tahoma/.test(n))) fontId = 'times';
+  else if (/courier|mono|consolas|menlo|typewriter|lucida console|andale/.test(n) || fontObj.isMonospace || family === 'monospace') fontId = 'courier';
+  else if ((/times|serif|georgia|garamond|palatino|minion|cambria|bookman|baskerville|century|didot|bodoni/.test(n) && !/sans/.test(n)) || ((fontObj.isSerifFont || family === 'serif') && !/arial|helvetica|calibri|verdana|tahoma/.test(n))) fontId = 'times';
   return { fontId, bold, italic };
 }
 
@@ -25,40 +25,51 @@ function quantKey(r, g, b) { return ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4)
 /** Échantillonne couleur de fond (bords) et couleur du texte (pixels les plus éloignés du fond). */
 export function sampleColors(canvas, pageW, box) {
   const k = canvas.width / pageW;
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  const px = (x, y) => Math.max(0, Math.min(canvas.width - 1, Math.round(x * k))), py = (y) => Math.max(0, Math.min(canvas.height - 1, Math.round(y * k)));
-  const edgePts = [];
-  const pad = 1.5;
+  const pad = 3;
+  // copie de la zone seulement (lecture rapide, sans pénaliser le canvas de la page)
+  const rx = Math.max(0, Math.floor((box.x - pad) * k)), ry = Math.max(0, Math.floor((box.y - pad) * k));
+  const rw = Math.max(1, Math.min(canvas.width - rx, Math.ceil((box.w + pad * 2) * k))), rh = Math.max(1, Math.min(canvas.height - ry, Math.ceil((box.h + pad * 2) * k)));
+  const tmp = document.createElement('canvas');
+  tmp.width = rw; tmp.height = rh;
+  const ctx = tmp.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(canvas, rx, ry, rw, rh, 0, 0, rw, rh);
+  const full = ctx.getImageData(0, 0, rw, rh);
+  const at = (x, y) => {
+    const px = Math.max(0, Math.min(rw - 1, Math.round(x * k) - rx)), py = Math.max(0, Math.min(rh - 1, Math.round(y * k) - ry));
+    const i = (py * rw + px) * 4;
+    return [full.data[i], full.data[i + 1], full.data[i + 2]];
+  };
+  const counts = new Map();
+  const edge = 1.5;
   for (let i = 0; i <= 8; i++) {
     const fx = box.x + (box.w * i) / 8, fy = box.y + (box.h * i) / 8;
-    edgePts.push([fx, box.y - pad], [fx, box.y + box.h + pad], [box.x - pad, fy], [box.x + box.w + pad, fy]);
-  }
-  const counts = new Map();
-  for (const [x, y] of edgePts) {
-    const d = ctx.getImageData(px(x), py(y), 1, 1).data;
-    const key = quantKey(d[0], d[1], d[2]);
-    const e = counts.get(key) || { n: 0, r: 0, g: 0, b: 0 };
-    e.n++; e.r += d[0]; e.g += d[1]; e.b += d[2];
-    counts.set(key, e);
+    for (const [x, y] of [[fx, box.y - edge], [fx, box.y + box.h + edge], [box.x - edge, fy], [box.x + box.w + edge, fy]]) {
+      const d = at(x, y);
+      const key = quantKey(d[0], d[1], d[2]);
+      const e = counts.get(key) || { n: 0, r: 0, g: 0, b: 0 };
+      e.n++; e.r += d[0]; e.g += d[1]; e.b += d[2];
+      counts.set(key, e);
+    }
   }
   let best = null;
   for (const e of counts.values()) if (!best || e.n > best.n) best = e;
   const bg = best ? [Math.round(best.r / best.n), Math.round(best.g / best.n), Math.round(best.b / best.n)] : [255, 255, 255];
   // texte : pixels les plus éloignés du fond dans la boîte
-  const x0 = px(box.x), y0 = py(box.y), x1 = px(box.x + box.w), y1 = py(box.y + box.h);
-  const w = Math.max(1, x1 - x0), hh = Math.max(1, y1 - y0);
-  let fg = [0, 0, 0];
-  try {
-    const data = ctx.getImageData(x0, y0, w, hh).data;
-    const cand = [];
-    for (let i = 0; i < data.length; i += 4) {
-      const dist = Math.abs(data[i] - bg[0]) + Math.abs(data[i + 1] - bg[1]) + Math.abs(data[i + 2] - bg[2]);
-      cand.push([dist, data[i], data[i + 1], data[i + 2]]);
+  const cand = [];
+  const x0 = Math.round(box.x * k) - rx, y0 = Math.round(box.y * k) - ry, x1 = Math.round((box.x + box.w) * k) - rx, y1 = Math.round((box.y + box.h) * k) - ry;
+  for (let y = Math.max(0, y0); y < Math.min(rh, y1); y++) {
+    for (let x = Math.max(0, x0); x < Math.min(rw, x1); x++) {
+      const i = (y * rw + x) * 4;
+      const dist = Math.abs(full.data[i] - bg[0]) + Math.abs(full.data[i + 1] - bg[1]) + Math.abs(full.data[i + 2] - bg[2]);
+      cand.push([dist, full.data[i], full.data[i + 1], full.data[i + 2]]);
     }
+  }
+  let fg = [0, 0, 0];
+  if (cand.length) {
     cand.sort((a, b) => b[0] - a[0]);
     const top = cand.slice(0, Math.max(1, Math.floor(cand.length * 0.04)));
-    if (top[0] && top[0][0] > 60) fg = [0, 1, 2].map((c) => Math.round(top.reduce((s, t) => s + t[c + 1], 0) / top.length));
-  } catch { /* ignoré */ }
+    if (top[0][0] > 60) fg = [0, 1, 2].map((c) => Math.round(top.reduce((s2, t2) => s2 + t2[c + 1], 0) / top.length));
+  }
   const hex = (c) => `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
   return { bg: hex(bg), fg: hex(fg) };
 }
@@ -103,7 +114,7 @@ export class TextEditTool {
       let fontObj = {};
       try { if (page.commonObjs.has(it.fontName)) fontObj = page.commonObjs.get(it.fontName) || {}; } catch { /* police non chargée */ }
       const w = Math.hypot(tr[0], tr[1]) * (it.width / Math.max(Math.hypot(it.transform[0], it.transform[1]), 1e-6));
-      items.push({ str: it.str, x: tr[4], base: tr[5], fs, w: it.width || w, asc, desc, fontName: it.fontName, fontObj });
+      items.push({ str: it.str, x: tr[4], base: tr[5], fs, w: it.width || w, asc, desc, fontName: it.fontName, fontObj, family: fontObj.fallbackName || style.fontFamily || '' });
     }
     // regroupement par ligne de base
     items.sort((a, b) => a.base - b.base || a.x - b.x);
@@ -132,10 +143,10 @@ export class TextEditTool {
     }
     for (const b of blocks) {
       const dom = b.items.reduce((m, it) => (it.str.length > (m?.str.length ?? 0) ? it : m), null);
-      b.top = b.base - b.asc * b.fs;
-      b.bottom = b.base + Math.abs(b.desc) * b.fs;
+      b.top = b.base - Math.max(b.asc, 0.8) * b.fs;
+      b.bottom = b.base + Math.max(Math.abs(b.desc), 0.22) * b.fs;
       b.h = b.bottom - b.top;
-      b.font = guessFont(dom.fontName, dom.fontObj);
+      b.font = guessFont(dom.fontName, dom.fontObj, dom.family);
     }
     page.cleanup();
     this.cache.set(i, { version: this.state.version, blocks });

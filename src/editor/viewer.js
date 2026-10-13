@@ -149,7 +149,7 @@ export class Viewer {
     const job = this.jobId;
     const key = { zoom: this.state.zoom, version: this.state.version };
     this.rendered.set(i, key);
-    this.renderQueue = this.renderQueue.then(() => (job === this.jobId ? this.renderPage(i, job, key) : null)).catch((e) => console.error('rendu', e));
+    this.renderQueue = this.renderQueue.then(() => (job === this.jobId ? this.renderPage(i, job, key) : null)).catch((e) => { if (e?.name !== 'RenderingCancelledException') console.error('rendu', e); });
   }
 
   async renderPage(i, job, key) {

@@ -637,7 +637,7 @@ export class AnnotManager {
         });
         st.setTool('select');
         st.setSelection([ann.id]);
-        requestAnimationFrame(() => this.startEdit(ann.id, true));
+        this.startEdit(ann.id, true, true);
         return;
       }
       case 'rect': case 'ellipse':
@@ -705,7 +705,7 @@ export class AnnotManager {
     }
   }
 
-  startEdit(id, selectAll = false) {
+  startEdit(id, selectAll = false, isNew = false) {
     const st = this.state;
     const a = st.getAnnot(id);
     if (!a || a.type !== 'text') return;
@@ -713,7 +713,7 @@ export class AnnotManager {
     const el = els?.find((e) => e.classList.contains('an-text'));
     if (!el) return;
     if (this.editing) this.endEdit();
-    this.editing = { id, el, before: a.text, checkpointed: false };
+    this.editing = { id, el, before: a.text, checkpointed: isNew, isNew };
     el.classList.add('editing');
     el.contentEditable = 'plaintext-only';
     if (el.contentEditable !== 'plaintext-only') el.contentEditable = 'true';
@@ -728,6 +728,7 @@ export class AnnotManager {
     el.oninput = () => {
       if (!this.editing.checkpointed) { st.checkpoint(); this.editing.checkpointed = true; }
       a.text = el.innerText.replace(/\n$/, '');
+      this.editing.typed = true;
       this.measure(a, el);
       st.dirty = true;
       this.updateFrame();
@@ -759,7 +760,7 @@ export class AnnotManager {
     window.getSelection()?.removeAllRanges();
     if (a) {
       a.text = e.el.innerText.replace(/\n$/, '');
-      if (!a.text.trim() && !(a.covers && a.covers.length)) { st.removeAnnots([a.id]); }
+      if (!a.text.trim() && !(a.covers && a.covers.length)) { if (e.isNew && !e.typed) st.undoStack.pop(); st.removeAnnots([a.id]); st.emit('history'); }
       else { this.refresh(a); this.measure(a, this.els.get(a.id).find((x) => x.classList.contains('an-text'))); st.emit('annots', { pages: [a.page], ids: [a.id] }); }
     }
     st.emit('editend');

@@ -20,7 +20,10 @@ export class Sidebar {
   }
 
   async run(fn) {
-    try { await fn(); } catch (e) { console.error(e); toastError(e.message || String(e)); }
+    if (this.busy) return;
+    this.busy = true;
+    this.host.classList.add('busy');
+    try { await fn(); } catch (e) { console.error(e); toastError(e.message || String(e)); } finally { this.busy = false; this.host.classList.remove('busy'); }
   }
 
   rebuild() {
