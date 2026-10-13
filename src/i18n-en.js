@@ -167,4 +167,5 @@ export default {
   'Caméra indisponible. Autorisez l’accès ou importez des photos.': 'Camera unavailable. Allow access or import photos.', 'Image illisible': 'Unreadable image', 'Prenez au moins une photo.': 'Take at least one photo.',
   'Capturer': 'Capture', 'Importer des photos': 'Import photos', 'Télécharger le PDF': 'Download the PDF', 'Amélioration': 'Enhancement', 'Document': 'Document', 'Gris': 'Gray', 'Noir & blanc': 'Black & white', 'Couleur': 'Color',
   'Posez le document sur une surface plane, bien éclairé. « Document » éclaircit le fond et renforce le texte.': 'Place the document on a flat, well-lit surface. “Document” lightens the background and strengthens the text.', 'Avant': 'Before',
+  'Vos fichiers sont traités dans votre navigateur et ne sont jamais envoyés sur un serveur.': 'Your files are processed in your browser and never sent to a server.', 'Licence MIT': 'MIT license',
 };

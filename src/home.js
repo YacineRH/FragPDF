@@ -84,7 +84,10 @@ export function mount(root) {
         feat('zap', t('Rapide'), t('Moteur WebAssembly et pdf.js : même les gros fichiers restent fluides.')),
         feat('pen', t('Éditeur complet'), t('Texte, images, formes, signatures, surlignage, caviardage, formulaires.')),
         feat('wand', t('Annuler / rétablir'), t('Historique illimité et raccourcis clavier pour travailler vite.'))),
-      h('p', { class: 'footer' }, 'FragPDF — ', t('fait avec soin.'))));
+      h('footer', { class: 'footer' },
+        h('p', {}, h('b', {}, 'FragPDF'), ' — ', t('fait avec soin.')),
+        h('p', { class: 'muted' }, t('Vos fichiers sont traités dans votre navigateur et ne sont jamais envoyés sur un serveur.')),
+        h('p', {}, h('a', { href: 'https://github.com/YacineRH/FragPDF', target: '_blank', rel: 'noopener' }, 'GitHub'), ' · ', h('a', { href: 'https://github.com/YacineRH/FragPDF/blob/main/LICENSE', target: '_blank', rel: 'noopener' }, t('Licence MIT'))))));
   root.append(page);
   return () => { document.removeEventListener('dragover', onDragOver); document.removeEventListener('drop', onDrop); };
 }
