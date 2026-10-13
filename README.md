@@ -26,16 +26,17 @@ Vos contrats, factures et pièces d'identité ne quittent jamais votre appareil.
 | **Images** | import (PNG, JPG, WebP…), glisser-déposer, collage, redimensionnement, rotation, opacité |
 | **Signature** | dessinée (stylet / souris / doigt), tapée (3 écritures manuscrites) ou importée (détourage automatique du fond), signatures mémorisées |
 | **Annotations** | surligneur, soulignement, barré (sur le texte ou en zone libre), dessin libre, rectangle, ellipse, ligne, flèche, notes, tampons (APPROUVÉ, CONFIDENTIEL…), coches ✓ ✗ ○ ● |
-| **Effacer** | aplat de couleur (avec pipette) ou **caviardage définitif** : les pages concernées sont rasterisées, le texte dessous est réellement détruit |
+| **Effacer** | aplat de couleur (avec pipette) ou **caviardage définitif** : les pages concernées sont rasterisées, le texte dessous est réellement détruit, le reste de la page demeure cherchable |
+| **Caviardage automatique** | détecte e-mails, téléphones, IBAN, cartes bancaires (Luhn), n° de sécu, adresses web ou un mot précis dans tout le document |
 | **Formulaires** | remplissage des champs AcroForm (texte, cases, listes, boutons radio) + aplatissement |
 | **Liens** | zones cliquables vers une URL ou une page |
 | **Pages** | miniatures, rotation, duplication, suppression, déplacement par glisser-déposer, insertion de pages blanches ou d'un autre PDF |
 | **Confort** | annuler/rétablir illimité, copier/coller, duplication, plans avant/arrière, aimantation d'angle (Maj), recherche de texte, zoom (Ctrl + molette), mode sombre, raccourcis clavier, sauvegarde automatique avec reprise |
 
 ### Outils (comme iLovePDF, en local)
-- **Organiser** : fusionner, diviser (plages, toutes les N pages, page par page), organiser les pages, extraire, supprimer, pivoter, rogner (cadre visuel), numéroter, filigrane (texte ou image, diagonale/mosaïque), en-tête/pied de page, supprimer les pages blanches, plusieurs pages par feuille, changer le format (A4, Letter…)
+- **Organiser** : fusionner, diviser (plages, toutes les N pages, page par page), organiser les pages, extraire, supprimer, pivoter, rogner (cadre visuel), numéroter, filigrane (texte ou image, diagonale/mosaïque), en-tête/pied de page, supprimer les pages blanches, plusieurs pages par feuille, changer le format (A4, Letter…), **comparer deux PDF** (différences visuelles + mots ajoutés/supprimés)
 - **Optimiser** : compression (recompression des images embarquées en conservant le texte vectoriel — 4 niveaux), niveaux de gris / noir & blanc, réparation, **OCR** (Tesseract.js)
-- **Convertir** : images → PDF, PDF → images (PNG/JPG/WebP, ZIP), PDF → Word (.docx), PDF → texte, texte → PDF, extraction des images
+- **Convertir** : images → PDF, PDF → images (PNG/JPG/WebP, ZIP), PDF → Word (.docx), PDF → texte, texte → PDF, extraction des images, **scanner** (caméra → PDF avec amélioration)
 - **Sécurité** : protection par mot de passe **AES-256** avec permissions, déverrouillage, métadonnées, nettoyage (scripts, pièces jointes, métadonnées), aplatissement des formulaires
 
 ## Démarrage

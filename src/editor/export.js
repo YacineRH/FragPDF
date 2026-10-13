@@ -6,7 +6,7 @@ import { createFontEmbedder } from '../lib/fonts.js';
 import { pageGeometry } from '../lib/geometry.js';
 import { color, wrapText, drawTextBlock } from '../lib/draw.js';
 import { loadDoc, PRODUCER } from '../lib/pdf-ops.js';
-import { renderPageToCanvas } from '../lib/pdfjs.js';
+import { renderPageToCanvas, pdfjs } from '../lib/pdfjs.js';
 import { canvasToBlob } from '../lib/utils.js';
 
 const rotPoint = (px, py, cx, cy, deg) => {
@@ -93,6 +93,25 @@ async function applyRedactions(doc, state, onProgress) {
     const { w, h } = state.pages[i];
     const np = doc.insertPage(i, [w, h]);
     np.drawImage(img, { x: 0, y: 0, width: w, height: h });
+    // le texte non caviardé reste cherchable / copiable : calque de texte invisible (mode de rendu 3)
+    try {
+      const fonts = createFontEmbedder(doc, PDFLib, fontkit);
+      const font = await fonts.embed('inter', false, false);
+      const vp = page.getViewport({ scale: 1 });
+      const tc = await page.getTextContent();
+      const zones = state.annots.filter((x) => x.type === 'redact' && x.page === i);
+      np.pushOperators(PDFLib.PDFOperator.of('Tr', [PDFLib.PDFNumber.of(3)]));
+      for (const it of tc.items) {
+        if (!it.str?.trim()) continue;
+        const tr = pdfjs.Util.transform(vp.transform, it.transform);
+        const fs = Math.hypot(tr[2], tr[3]);
+        if (Math.abs(Math.atan2(tr[1], tr[0])) > 0.03 || fs < 2) continue;
+        const bx = tr[4], by = tr[5] - fs * 0.95, bw = it.width, bh = fs * 1.25;
+        if (zones.some((z) => bx < z.x + z.w + 1 && bx + bw > z.x - 1 && by < z.y + z.h && by + bh > z.y)) continue;
+        try { np.drawText(fonts.sanitize(font, it.str), { x: tr[4], y: h - tr[5], size: fs, font }); } catch { /* glyphe absent */ }
+      }
+      np.pushOperators(PDFLib.PDFOperator.of('Tr', [PDFLib.PDFNumber.of(0)]));
+    } catch (e) { console.warn('calque de texte après caviardage', e); }
     doc.removePage(i + 1);
     canvas.width = canvas.height = 0;
     page.cleanup();

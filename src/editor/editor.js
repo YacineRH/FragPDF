@@ -22,6 +22,7 @@ import { blankDocument, insertPdf } from './pageops.js';
 import { loadAllPreviewFonts } from '../lib/fonts.js';
 import { uid, debounce } from '../lib/utils.js';
 import { saveSession, loadSession, clearSession } from '../lib/autosave.js';
+import { scanDocument } from './autoredact.js';
 
 const RAIL = [
   [['select', 'cursor', 'V'], ['edittext', 'type', 'E']],
@@ -111,6 +112,16 @@ export async function mount(root, { query }) {
       if (!sel.length) return;
       state.checkpoint();
       sel.forEach((a) => { const b = bboxOf(a); const p = state.pages[a.page]; state.updateAnnot(a.id, { x: (p.w - b.w) / 2, y: (p.h - b.h) / 2 }); });
+    },
+    async autoRedact(spec) {
+      const pm = progressModal(t('Recherche dans le document…'));
+      try {
+        const rects = await scanDocument(state, find, spec, (p) => pm.set(p));
+        if (!rects.length) { toast(t('Aucune occurrence trouvée.')); return; }
+        state.checkpoint();
+        rects.forEach((r) => state.addAnnot({ type: 'redact', ...r }, { select: false }));
+        toast(t('{n} zone(s) à caviarder ajoutée(s). Vérifiez-les avant de télécharger.', { n: rects.length }), 'success', 5200);
+      } finally { pm.close(); }
     },
     resetAspect() {
       const a = state.selected()[0];

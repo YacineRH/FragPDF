@@ -30,6 +30,7 @@ export const TOOLS = [
   { id: 'remove-blank', cat: 'organize', icon: 'eraser', title: 'Supprimer les pages blanches', desc: 'Détecte automatiquement les feuilles vierges et les retire.', badge: 'Nouveau', load: () => import('./extra.js').then((m) => m.removeBlank) },
   { id: 'nup', cat: 'organize', icon: 'grid', title: 'Plusieurs pages par feuille', desc: 'Assemblez 2, 4, 6 ou 9 pages sur une feuille (impression économique).', load: () => import('./extra.js').then((m) => m.nup) },
   { id: 'resize', cat: 'organize', icon: 'layout', title: 'Changer le format des pages', desc: 'Passez en A4, A3, Letter… sans déformer le contenu.', load: () => import('./extra.js').then((m) => m.resize) },
+  { id: 'compare', cat: 'organize', icon: 'compare', title: 'Comparer deux PDF', desc: 'Repérez les différences visuelles et textuelles page par page.', badge: 'Nouveau', load: () => import('./compare.js').then((m) => m.compare) },
   { id: 'crop', cat: 'organize', icon: 'crop', title: 'Rogner les pages', desc: 'Supprimez les marges avec un cadre visuel.', load: () => import('./stamp.js').then((m) => m.crop) },
   { id: 'page-numbers', cat: 'organize', icon: 'hash', title: 'Numéroter les pages', desc: 'Formats, positions, polices et plage personnalisés.', load: () => import('./stamp.js').then((m) => m.pageNumbers) },
   { id: 'watermark', cat: 'organize', icon: 'drop', title: 'Filigrane', desc: 'Ajoutez un texte ou un logo en transparence, en diagonale ou en mosaïque.', load: () => import('./stamp.js').then((m) => m.watermark) },
@@ -40,6 +41,7 @@ export const TOOLS = [
   { id: 'repair', cat: 'optimize', icon: 'repair', title: 'Réparer un PDF', desc: 'Tente de récupérer un fichier corrompu ou mal formé.', load: () => import('./optimize.js').then((m) => m.repair) },
   { id: 'ocr', cat: 'optimize', icon: 'ocr', title: 'OCR — texte des scans', desc: 'Reconnaît le texte d’un PDF scanné et le rend sélectionnable.', badge: 'Nouveau', load: () => import('./optimize.js').then((m) => m.ocr) },
   // Convertir
+  { id: 'scan', cat: 'convert', icon: 'image', title: 'Scanner un document', desc: 'Photographiez vos pages avec la caméra : recadrage clair, gris ou noir & blanc → PDF.', badge: 'Nouveau', load: () => import('./scan.js').then((m) => m.scan) },
   { id: 'img2pdf', cat: 'convert', icon: 'image', title: 'Images → PDF', desc: 'JPG, PNG, WebP… en un PDF, format et marges au choix.', load: () => import('./convert.js').then((m) => m.imgToPdf) },
   { id: 'pdf2img', cat: 'convert', icon: 'file', title: 'PDF → Images', desc: 'Exportez chaque page en PNG, JPG ou WebP (archive ZIP).', load: () => import('./convert.js').then((m) => m.pdfToImg) },
   { id: 'extract-images', cat: 'convert', icon: 'image', title: 'Extraire les images', desc: 'Récupérez toutes les images intégrées au PDF (archive ZIP).', badge: 'Nouveau', load: () => import('./extra.js').then((m) => m.extractImages) },

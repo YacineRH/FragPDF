@@ -156,6 +156,15 @@ await test('caviardage : le texte masqué est détruit', async () => {
   ok(!txt[0].includes('Montant'), 'texte encore présent : ' + txt[0]);
   ok(txt[1].includes('Montant'), 'la page 2 est intacte');
 });
+await test('caviardage automatique (e-mail, téléphone, IBAN, carte)', async () => {
+  await openEditor('sensitive.pdf');
+  await page.click('[data-tool=redact]');
+  for (const label of ['E-mails', 'Téléphones', 'IBAN', 'Cartes bancaires']) await page.check(`.props label:has-text("${label}") input`);
+  await page.click('.props button:has-text("Trouver et marquer")');
+  await page.waitForFunction(() => window.__fragpdf.state.annots.filter((a) => a.type === 'redact').length >= 4, null, { timeout: 15000 });
+  const txt = (await textOfBytes(await exportBytes()))[0];
+  ok(!/example\.com|06 12|FR76|4111/.test(txt), 'données encore présentes : ' + txt);
+});
 await test('formulaire : valeurs écrites', async () => {
   await openEditor('form.pdf');
   const inputs = await page.$$('.form-field');
@@ -368,6 +377,32 @@ await test('niveaux de gris', async () => {
 await test('extraire les images', async () => {
   const [f] = await runTool('extract-images', ['heavy.pdf']);
   ok(f.endsWith('.zip') || f.endsWith('.png'), f);
+});
+await test('comparer deux PDF', async () => {
+  await page.goto(URL + '#/'); await page.goto(URL + '#/tool/compare');
+  await page.waitForSelector('.cmp-slot .dropzone input[type=file]', { state: 'attached' });
+  const ins = await page.$$('.cmp-slot .dropzone input[type=file]');
+  await ins[0].setInputFiles(path.join(FIX, 'cmp-a.pdf'));
+  await page.waitForFunction(() => document.querySelectorAll('.cmp-slot .dropzone').length === 1);
+  await page.setInputFiles('.cmp-slot .dropzone input[type=file]', path.join(FIX, 'cmp-b.pdf'));
+  await page.click('button:has-text("Comparer les documents")');
+  await page.waitForSelector('.cmp-pages', { timeout: 20000 });
+  const txt = await page.evaluate(() => document.querySelector('.cmp-view')?.innerText + ' || ' + document.querySelector('.cmp-pages')?.innerText);
+  ok(/1 page\(s\) différente\(s\) sur 2/.test(await page.evaluate(() => document.body.innerText)), 'résumé : ' + txt);
+  ok(await page.evaluate(() => document.querySelectorAll('.cmp-words .ins').length > 0), 'mots ajoutés signalés');
+});
+await test('scanner : capture caméra (simulée) → PDF', async () => {
+  const b = await (await import('playwright-core')).chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] });
+  const ctx2 = await b.newContext({ permissions: ['camera'], acceptDownloads: true, locale: 'fr-FR' });
+  const p2 = await ctx2.newPage();
+  await p2.goto(URL + '#/tool/scan');
+  await p2.waitForFunction(() => document.querySelector('.scan-video')?.videoWidth > 0, null, { timeout: 15000 });
+  await p2.click('button:has-text("Capturer")'); await p2.click('button:has-text("Capturer")');
+  await p2.waitForFunction(() => document.querySelectorAll('.file-card').length === 2);
+  const [dl] = await Promise.all([p2.waitForEvent('download'), p2.click('button:has-text("Télécharger le PDF")')]);
+  const f = path.join(TMP, 'scan.pdf'); await dl.saveAs(f);
+  eq((await PDFDocument.load(fs.readFileSync(f))).getPageCount(), 2);
+  await b.close();
 });
 await test('PDF → texte et PDF → Word', async () => {
   const [t] = await runTool('pdf2text', ['sample.pdf']);

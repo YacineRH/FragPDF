@@ -5,6 +5,7 @@ import { t, pagesLabel } from '../i18n.js';
 import { FONTS, ensureFontLoaded } from '../lib/fonts.js';
 import { colorControl, numberControl, sliderControl, toggleButtons, segControl, row } from '../ui/controls.js';
 import { formatBytes } from '../lib/utils.js';
+import { KINDS } from './autoredact.js';
 
 const GROUP_OF_TYPE = { text: 'text', rect: 'shape', ellipse: 'shape', line: 'line', arrow: 'line', ink: 'ink', highlight: 'highlight', underline: 'underline', strike: 'strike', whiteout: 'whiteout', redact: 'redact', mark: 'mark', stamp: 'stamp', link: 'link', image: 'image' };
 const GROUP_OF_TOOL = { text: 'text', note: 'text', rect: 'shape', ellipse: 'shape', line: 'line', arrow: 'line', ink: 'ink', highlight: 'highlight', underline: 'underline', strike: 'strike', whiteout: 'whiteout', redact: 'redact', mark: 'mark', stamp: 'stamp', link: 'link' };
@@ -137,9 +138,17 @@ export class PropsPanel {
         R(t('Couleur de l’aplat'), colorControl({ value: val('color'), onChange: (c) => apply({ color: c }), eyedropper: true }).el);
         body.append(h('p', { class: 'prop-hint warn' }, t('Attention : l’aplat masque le contenu mais ne le supprime pas du fichier. Pour une suppression définitive, utilisez le Caviardage.')));
         break;
-      case 'redact':
+      case 'redact': {
+        const lit = h('input', { class: 'input sm', placeholder: t('Mot, nom, numéro…') });
+        const kinds = {};
+        const kindChecks = Object.entries(KINDS).map(([k, v]) => { const c = h('input', { type: 'checkbox' }); kinds[k] = c; return h('label', { class: 'check', style: { marginBottom: '.25rem' } }, c, t(v.label)); });
+        if (ctx.kind === 'tool') {
+          body.append(h('div', { class: 'prop-row' }, h('span', { class: 'prop-label' }, t('Caviardage automatique')), lit, h('div', { style: { height: '.5rem' } }), ...kindChecks,
+            h('button', { class: 'btn btn-sm', style: { marginTop: '.5rem' }, onclick: () => this.actions.autoRedact({ literal: lit.value, kinds: Object.keys(kinds).filter((k) => kinds[k].checked) }) }, icon('search', 15), t('Trouver et marquer'))));
+        }
         body.append(h('p', { class: 'prop-hint warn' }, t('Le caviardage est définitif : à l’export, les pages concernées sont converties en images et le texte sous les zones noires est détruit.')));
         break;
+      }
       case 'mark':
         R(t('Symbole'), segControl([['check', '✓'], ['cross', '✗'], ['circle', '○'], ['dot', '●']], val('kind') || 'check', (v) => apply({ kind: v })).el);
         R(t('Couleur'), colorControl({ value: val('color'), onChange: (c) => apply({ color: c }) }).el);

@@ -84,3 +84,29 @@ async function heavy() {
   writeFileSync('scripts/fixtures/heavy.pdf', await doc.save());
 }
 await heavy();
+
+async function sensitive() {
+  const doc = await PDFDocument.create();
+  const helv = await doc.embedFont(StandardFonts.Helvetica);
+  const p = doc.addPage([595, 842]);
+  const lines = ['Dossier client confidentiel', 'Contact : jean.dupont@example.com', 'Téléphone : 06 12 34 56 78', 'IBAN : FR76 3000 6000 0112 3456 7890 189', 'Carte : 4111 1111 1111 1111', 'Texte neutre qui doit rester visible.'];
+  lines.forEach((l, i) => p.drawText(l, { x: 50, y: 760 - i * 28, size: 14, font: helv }));
+  writeFileSync('scripts/fixtures/sensitive.pdf', await doc.save());
+}
+await sensitive();
+
+// Deux versions d'un document pour tester la comparaison.
+async function pair() {
+  for (const [name, total, tail] of [['cmp-a', '1 250,00 €', 'Paiement à 30 jours.'], ['cmp-b', '1 480,00 €', 'Paiement à 45 jours.']]) {
+    const doc = await PDFDocument.create();
+    const helv = await doc.embedFont(StandardFonts.Helvetica);
+    for (let i = 1; i <= 2; i++) {
+      const p = doc.addPage([595, 842]);
+      p.drawText(`Contrat — page ${i}`, { x: 40, y: 790, size: 20, font: helv });
+      p.drawText('Les parties conviennent de ce qui suit.', { x: 40, y: 740, size: 12, font: helv });
+      if (i === 1) { p.drawText(`Montant total : ${total}`, { x: 40, y: 700, size: 12, font: helv }); p.drawText(tail, { x: 40, y: 680, size: 12, font: helv }); }
+    }
+    writeFileSync(`scripts/fixtures/${name}.pdf`, await doc.save());
+  }
+}
+await pair();
