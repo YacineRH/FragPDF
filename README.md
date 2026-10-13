@@ -36,7 +36,7 @@ Vos contrats, factures et pièces d'identité ne quittent jamais votre appareil.
 ### Outils (comme iLovePDF, en local)
 - **Organiser** : fusionner, diviser (plages, toutes les N pages, page par page), organiser les pages, extraire, supprimer, pivoter, rogner (cadre visuel), numéroter, filigrane (texte ou image, diagonale/mosaïque), en-tête/pied de page, supprimer les pages blanches, plusieurs pages par feuille, changer le format (A4, Letter…), **comparer deux PDF** (différences visuelles + mots ajoutés/supprimés)
 - **Optimiser** : compression (recompression des images embarquées en conservant le texte vectoriel — 4 niveaux), niveaux de gris / noir & blanc, réparation, **OCR** (Tesseract.js)
-- **Convertir** : images → PDF, PDF → images (PNG/JPG/WebP, ZIP), PDF → Word (.docx), PDF → texte, texte → PDF, extraction des images, **scanner** (caméra → PDF avec amélioration)
+- **Convertir** : images → PDF, PDF → images (PNG/JPG/WebP, ZIP), PDF → Word (.docx), PDF → Excel (.xlsx / CSV), PDF → texte, texte → PDF, extraction des images, **scanner** (caméra → PDF avec amélioration)
 - **Sécurité** : protection par mot de passe **AES-256** avec permissions, déverrouillage, métadonnées, nettoyage (scripts, pièces jointes, métadonnées), aplatissement des formulaires
 
 ## Démarrage
@@ -46,7 +46,10 @@ npm install
 npm run dev        # http://localhost:5173
 npm run build      # production → dist/
 npm run preview    # sert dist/ (service worker actif → mode hors ligne)
-npm run test:e2e   # tests de bout en bout (Playwright + Chromium)
+npm run test:unit  # tests unitaires (plages, géométrie, retour à la ligne, motifs de caviardage…)
+npm run test:smoke # test de fumée du build de production (pdf.js, polices, QPDF/WASM, service worker)
+npm run test:e2e   # ~40 scénarios de bout en bout (Playwright + Chromium) : éditeur, outils, OCR, scanner…
+npm test           # tout enchaîner
 ```
 
 Le site généré est **100 % statique** (chemins relatifs) : déployez `dist/` n'importe où (GitHub Pages, Netlify, Nginx, clé USB…).
@@ -64,7 +67,8 @@ src/
 │   ├── compress.js      recompression d'images (JPEG/Flate), mode « extrême » par rasterisation
 │   ├── convert.js       PDF → images / texte / docx
 │   ├── security.js      chiffrement/déchiffrement/réparation via QPDF (WASM)
-│   ├── ocr.js           OCR + calque de texte invisible
+│   ├── ocr.js           OCR (Tesseract, moteur et modèles fra/eng servis localement) + calque de texte invisible
+│   ├── autosave.js      sauvegarde automatique IndexedDB
 │   ├── geometry.js      coordonnées visuelles ↔ espace PDF (pages tournées, CropBox)
 │   ├── draw.js          texte multi-lignes, retour à la ligne identique à l'écran
 │   └── fonts.js         polices standard + polices Unicode embarquées
