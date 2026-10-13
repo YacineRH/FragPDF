@@ -15,7 +15,13 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - name: Tests de bout en bout (Chromium)
+      - name: Installer Chromium (version attendue par playwright-core)
+        run: npx playwright-core install --with-deps chromium
+      - name: Test de fumée (build de production)
         run: |
-          npx playwright install --with-deps chromium
-          CHROME="$(node -e "console.log(require('playwright-core').chromium.executablePath())")" npm run test:e2e
+          export CHROME="$(node -e "console.log(require('playwright-core').chromium.executablePath())")"
+          npm run test:smoke
+      - name: Tests de bout en bout
+        run: |
+          export CHROME="$(node -e "console.log(require('playwright-core').chromium.executablePath())")"
+          npm run test:e2e

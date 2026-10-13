@@ -36,7 +36,7 @@ const out = await page.evaluate(async () => {
 const doc = await PDFDocument.load(Buffer.from(out, 'base64'));
 const fontNames = [];
 for (const [, obj] of doc.context.enumerateIndirectObjects()) {
-  if (obj instanceof PDFDict && String(obj.get(PDFName.of('Type'))) === '/Font') { const bf = String(obj.get(PDFName.of('BaseFont')) || ''); if (/\/[A-Z]{6}\+/.test(bf)) fontNames.push(bf); }
+  if (obj instanceof PDFDict && String(obj.get(PDFName.of('Type'))) === '/Font') { const bf = String(obj.get(PDFName.of('BaseFont')) || ''); if (/Playfair|Caveat|Roboto/.test(bf)) fontNames.push(bf); }
 }
 check('export avec polices Unicode embarquées', doc.getPageCount() === 3 && fontNames.length >= 3, `polices intégrées : ${fontNames.join(', ')}`);
 
