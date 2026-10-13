@@ -1,7 +1,7 @@
 // Panneau de propriétés : options de l'outil actif ou de l'objet sélectionné.
 import { h } from '../lib/utils.js';
 import { icon } from '../ui/icons.js';
-import { t } from '../i18n.js';
+import { t, pagesLabel } from '../i18n.js';
 import { FONTS, ensureFontLoaded } from '../lib/fonts.js';
 import { colorControl, numberControl, sliderControl, toggleButtons, segControl, row } from '../ui/controls.js';
 import { formatBytes } from '../lib/utils.js';
@@ -211,10 +211,10 @@ export class PropsPanel {
   buildDocInfo(body) {
     const st = this.state;
     body.append(
-      h('div', { class: 'doc-card' }, icon('file', 28), h('div', {}, h('b', {}, st.name), h('div', { class: 'muted' }, `${st.pages.length} ${t('pages')} · ${formatBytes(st.bytes?.length || 0)}`))),
+      h('div', { class: 'doc-card' }, icon('file', 28), h('div', {}, h('b', {}, st.name), h('div', { class: 'muted' }, `${pagesLabel(st.pages.length)} · ${formatBytes(st.bytes?.length || 0)}`))),
       h('p', { class: 'prop-hint' }, t('Choisissez un outil à gauche, ou cliquez sur un objet pour modifier ses propriétés.')),
       h('div', { class: 'shortcuts' },
         h('h4', {}, t('Raccourcis')),
-        ...[['V', t('Sélection')], ['E', t('Modifier le texte')], ['T', t('Texte')], ['I', t('Image')], ['H', t('Surligner')], ['D', t('Dessiner')], ['Ctrl+Z / Y', t('Annuler / Rétablir')], ['Ctrl+S', t('Télécharger')], ['Ctrl+F', t('Rechercher')], ['Suppr', t('Supprimer')], ['Maj+clic', t('Sélection multiple')]].map(([k, v]) => h('div', { class: 'sc' }, h('span', { class: 'kbd' }, k), h('span', {}, v)))));
+        ...[['V', t('Sélection')], ['E', t('Modifier le texte')], ['T', t('Texte')], ['I', t('Image')], ['H', t('Surligner')], ['D', t('Dessiner')], ['Ctrl+Z / Y', t('Annuler / Rétablir')], ['Ctrl+S', t('Télécharger')], ['Ctrl+F', t('Rechercher')], ['Suppr', t('Supprimer')], ['Maj+clic / Maj+glisser', t('Sélection multiple')]].map(([k, v]) => h('div', { class: 'sc' }, h('span', { class: 'kbd' }, k), h('span', {}, v)))));
   }
 }

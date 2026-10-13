@@ -165,6 +165,44 @@ await test('formulaire : valeurs écrites', async () => {
   eq(doc.getForm().getTextField('nom').getText(), 'Marie');
   eq(doc.getForm().getCheckBox('newsletter').isChecked(), true);
 });
+await test('PDF protégé par mot de passe propriétaire : ouverture + export', async () => {
+  await page.goto(URL + '#/'); await page.goto(URL + '#/editor');
+  await page.waitForSelector('.ed-empty input[type=file]', { state: 'attached' });
+  const b64 = await page.evaluate(async () => {
+    const { encryptPdf } = await import('/src/lib/security.js');
+    const { blankDocument } = await import('/src/editor/pageops.js');
+    const bytes = await encryptPdf(await blankDocument(), '', 'owner-pw', { print: 'full', copy: false, modify: false });
+    let s = ''; for (let i = 0; i < bytes.length; i += 8192) s += String.fromCharCode(...bytes.subarray(i, i + 8192));
+    return btoa(s);
+  });
+  fs.writeFileSync(path.join(TMP, 'owner.pdf'), Buffer.from(b64, 'base64'));
+  await page.setInputFiles('.ed-empty input[type=file]', path.join(TMP, 'owner.pdf'));
+  await page.waitForFunction(() => window.__fragpdf?.state.pages.length > 0, null, { timeout: 15000 });
+  await page.evaluate(() => window.__fragpdf.state.addAnnot({ type: 'rect', page: 0, x: 10, y: 10, w: 50, h: 40, stroke: '#f00', strokeW: 2, fill: null }, { select: false }));
+  const doc = await PDFDocument.load(await exportBytes());
+  eq(doc.getPageCount(), 1);
+});
+await test('menu Fichier → outil avec le document courant', async () => {
+  await openEditor();
+  await page.click('.ed-top .btn:has-text("Fichier")');
+  await page.click('.menu-item:has-text("Compresser un PDF")');
+  await page.waitForSelector('.run-btn', { timeout: 15000 });
+  ok(await page.evaluate(() => document.body.innerText.includes('sample.pdf')), 'fichier transmis');
+});
+await test('sélection multiple par rectangle (Maj + glisser)', async () => {
+  await openEditor();
+  await page.evaluate(() => {
+    const { state } = window.__fragpdf;
+    state.addAnnot({ type: 'rect', page: 0, x: 60, y: 300, w: 60, h: 40, stroke: '#f00', strokeW: 2, fill: null }, { select: false });
+    state.addAnnot({ type: 'rect', page: 0, x: 140, y: 300, w: 60, h: 40, stroke: '#00f', strokeW: 2, fill: null }, { select: false });
+  });
+  const pg = await (await page.$('.page-wrap')).boundingBox();
+  const z = await page.evaluate(() => window.__fragpdf.state.zoom);
+  await page.keyboard.down('Shift');
+  await page.mouse.move(pg.x + 40 * z, pg.y + 280 * z); await page.mouse.down(); await page.mouse.move(pg.x + 220 * z, pg.y + 360 * z, { steps: 6 }); await page.mouse.up();
+  await page.keyboard.up('Shift');
+  eq(await page.evaluate(() => window.__fragpdf.state.sel.size), 2);
+});
 await test('page tournée : l’export garde la rotation', async () => {
   await openEditor('rotated.pdf');
   await page.evaluate(() => window.__fragpdf.state.addAnnot({ type: 'rect', page: 0, x: 10, y: 10, w: 50, h: 40, stroke: '#f00', strokeW: 2, fill: null }, { select: false }));

@@ -147,6 +147,7 @@
 .menu { position: fixed; z-index: 900; min-width: 280px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-lg); padding: .4rem; }
 .menu-item { display: flex; align-items: center; gap: .7rem; width: 100%; border: 0; background: transparent; padding: .55rem .7rem; border-radius: 9px; text-align: left; font-size: .9rem; }
 .menu-item span:nth-child(2) { flex: 1; } .menu-item:hover { background: var(--accent-soft); }
+.menu-label { padding: .35rem .7rem .15rem; font-size: .7rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
 .menu-sep { height: 1px; background: var(--border); margin: .3rem .2rem; }
 
 .ed-empty { position: absolute; inset: 0; display: grid; place-items: center; padding: 1rem; background: var(--bg); background-image: var(--bg-grad); z-index: 20; }

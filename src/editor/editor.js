@@ -2,11 +2,11 @@
 import { h, formatBytes, downloadBlob, baseName, readFileBytes, clamp } from '../lib/utils.js';
 import { icon } from '../ui/icons.js';
 import { brand, themeToggle, langToggle, navigate } from '../ui/chrome.js';
-import { t } from '../i18n.js';
+import { t, pagesLabel } from '../i18n.js';
 import { toast, toastError } from '../ui/toast.js';
 import { openModal, progressModal, confirmDialog } from '../ui/modal.js';
 import { loadPdfFile, isPdf, isImage } from '../lib/ingest.js';
-import { takePending, prefs } from '../lib/session.js';
+import { takePending, setPending, prefs } from '../lib/session.js';
 import { EditorState } from './state.js';
 import { Viewer } from './viewer.js';
 import { AnnotManager, HL_TOOLS, bboxOf, translatePatch } from './annots.js';
@@ -432,6 +432,9 @@ export async function mount(root, { query }) {
       have ? mk('check', t('Appliquer les modifications au document'), bakeChanges) : null,
       have ? mk('flatten', t('Aplatir les champs de formulaire'), async () => { const { flattenForms } = await import('../lib/pdf-ops.js'); const bytes = await flattenForms(state.bytes); state.checkpoint(); state.formValues.clear(); await state.setBytes(bytes); toast(t('Formulaires aplatis.'), 'success'); }) : null,
       have ? mk('eye', t('Imprimer…'), printDoc, 'Ctrl+P') : null,
+      have ? h('div', { class: 'menu-sep' }) : null,
+      have ? h('div', { class: 'menu-label' }, t('Utiliser un outil sur ce document')) : null,
+      ...(have ? [['compress', 'compress', 'Compresser un PDF'], ['lock', 'protect', 'Protéger par mot de passe'], ['drop', 'watermark', 'Filigrane'], ['hash', 'page-numbers', 'Numéroter les pages'], ['split', 'split', 'Diviser un PDF'], ['image', 'pdf2img', 'PDF → Images'], ['ocr', 'ocr', 'OCR — texte des scans']].map(([ic, id, label]) => mk(ic, t(label), () => sendToTool(id))) : []),
       h('div', { class: 'menu-sep' }),
       have ? mk('download', t('Télécharger…'), openExportDialog, 'Ctrl+S') : null,
       h('div', { class: 'menu-sep' }),
@@ -441,6 +444,17 @@ export async function mount(root, { query }) {
     document.body.append(menu);
     const close = (ev) => { if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener('mousedown', close, true); } };
     setTimeout(() => document.addEventListener('mousedown', close, true), 0);
+  }
+
+  /** Exporte le document (annotations incluses) et l'ouvre dans une page d'outil. */
+  async function sendToTool(id) {
+    const pm = progressModal(t('Préparation…'));
+    try {
+      const bytes = await exportPdf(state, { onProgress: (p) => pm.set(p) });
+      saveSession(state);
+      setPending({ name: state.name, bytes, pages: state.pages.length, size: bytes.length });
+      navigate(`/tool/${id}`);
+    } finally { pm.close(); }
   }
 
   async function bakeChanges() {
@@ -479,7 +493,7 @@ export async function mount(root, { query }) {
         h('label', { class: 'field' }, h('span', {}, t('Nom du fichier')), name),
         hasForm ? h('label', { class: 'check' }, flat, t('Aplatir les champs de formulaire (non modifiables ensuite)')) : null,
         redacts ? h('div', { class: 'note' }, icon('shield', 16), h('span', {}, t('Les pages caviardées seront converties en images : le texte masqué est définitivement supprimé.'))) : null,
-        h('p', { class: 'muted', style: { fontSize: '.85rem' } }, `${state.pages.length} ${t('pages')} · ${state.annots.length} ${t('objet(s) ajouté(s)')}`)),
+        h('p', { class: 'muted', style: { fontSize: '.85rem' } }, `${pagesLabel(state.pages.length)} · ${state.annots.length} ${t('objet(s) ajouté(s)')}`)),
       actions: [
         { label: t('Annuler'), value: null },
         {

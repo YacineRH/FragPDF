@@ -6,7 +6,7 @@ import { t } from '../i18n.js';
 import { makeDropzone, loadPdfFile, firstPageThumb } from '../lib/ingest.js';
 import { progressModal } from '../ui/modal.js';
 import { toastError } from '../ui/toast.js';
-import { setPending } from '../lib/session.js';
+import { setPending, takePending } from '../lib/session.js';
 import { navigate } from '../ui/chrome.js';
 
 const MIME = { pdf: 'application/pdf', zip: 'application/zip', txt: 'text/plain', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
@@ -160,6 +160,9 @@ export function fileTool(def) {
       }
 
       render();
+      // document transmis depuis l'éditeur (menu Fichier) : on le charge directement
+      const pend = def.accept === 'pdf' ? takePending() : null;
+      if (pend) { state.files.push({ id: uid(), ...pend, pages: pend.pages || 1, kind: 'pdf' }); if (!def.multiple) state.files = state.files.slice(-1); render(); }
       return () => state.files.forEach((f) => f.url && URL.revokeObjectURL(f.url));
     },
   };

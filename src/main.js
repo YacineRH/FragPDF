@@ -48,6 +48,18 @@ window.addEventListener('unhandledrejection', (e) => {
 window.addEventListener('hashchange', route);
 route();
 
+// PWA installée : un double-clic sur un PDF l'ouvre directement dans l'éditeur (File Handling API)
+if ('launchQueue' in window) {
+  window.launchQueue.setConsumer(async (params) => {
+    const handle = params.files?.[0];
+    if (!handle) return;
+    const { loadPdfFile } = await import('./lib/ingest.js');
+    const { setPending } = await import('./lib/session.js');
+    const doc = await loadPdfFile(await handle.getFile());
+    if (doc) { setPending(doc); location.hash = '#/editor'; }
+  });
+}
+
 // Service worker : usage hors ligne (en production uniquement)
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));

@@ -19,3 +19,6 @@ export function t(s, vars) {
   if (vars) out = out.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
   return out;
 }
+
+/** « 1 page » / « 3 pages » */
+export function pagesLabel(n) { return `${n} ${n > 1 ? t('pages') : t('page')}`; }

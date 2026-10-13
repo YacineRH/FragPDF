@@ -152,4 +152,6 @@ export default {
   'APPROUVÉ': 'APPROVED', 'REFUSÉ': 'REJECTED', 'BROUILLON': 'DRAFT', 'URGENT': 'URGENT', 'COPIE': 'COPY', 'PAYÉ': 'PAID', 'ORIGINAL': 'ORIGINAL', 'À REVOIR': 'TO REVIEW', 'SIGNÉ': 'SIGNED', 'CAVIARDÉ': 'REDACTED',
   'Modèle': 'Template', 'Texte du tampon': 'Stamp text',
   'Cliquez pour poser le symbole (ou glissez pour le dimensionner).': 'Click to place the symbol (or drag to size it).', 'https://… ou #page=3': 'https://… or #page=3',
+  'Utiliser un outil sur ce document': 'Use a tool on this document', 'Préparation…': 'Preparing…', 'Maj+clic / Maj+glisser': 'Shift+click / Shift+drag',
+  'page': 'page',
 };

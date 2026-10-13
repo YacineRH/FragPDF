@@ -383,8 +383,29 @@ export class AnnotManager {
       return;
     }
     if (!e.target.closest('.sel-frame') && !e.target.closest('.form-field')) {
+      const pageEl = e.target.closest('.page-wrap');
+      if (e.shiftKey && pageEl) { this.startMarquee(e, +pageEl.dataset.page); return; }
       if (st.sel.size) st.setSelection([]);
     }
+  }
+
+  /** Sélection par rectangle (Maj + glisser sur le fond de la page). */
+  startMarquee(e, page) {
+    e.preventDefault();
+    const start = this.viewer.pointToPage(e.clientX, e.clientY, page);
+    const base = new Set(this.state.sel);
+    const g = h('div', { class: 'ghost' });
+    this.viewer.dom(page).annotLayer.append(g);
+    const move = (ev) => {
+      const p = this.viewer.pointToPage(ev.clientX, ev.clientY, page);
+      const r = { x: Math.min(start.x, p.x), y: Math.min(start.y, p.y), w: Math.abs(p.x - start.x), h: Math.abs(p.y - start.y) };
+      g.style.cssText = `left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px`;
+      const hit = this.state.annotsOnPage(page).filter((a) => { const b = bboxOf(a); return b.x < r.x + r.w && b.x + b.w > r.x && b.y < r.y + r.h && b.y + b.h > r.y; }).map((a) => a.id);
+      this.state.setSelection([...new Set([...base, ...hit])]);
+    };
+    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); g.remove(); };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
   }
 
   startMove(e, a, alreadySel = false) {

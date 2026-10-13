@@ -58,10 +58,17 @@ export function mount(root) {
   search.addEventListener('input', renderCats);
   renderCats();
 
+  // dépôt d'un PDF n'importe où sur la page
+  const onDragOver = (e) => { if (e.dataTransfer?.types.includes('Files')) { e.preventDefault(); drop.classList.add('over'); } };
+  const onDrop = (e) => { if (e.dataTransfer?.files.length && !drop.contains(e.target)) { e.preventDefault(); drop.classList.remove('over'); openFile(e.dataTransfer.files[0]); } };
+  document.addEventListener('dragover', onDragOver);
+  document.addEventListener('drop', onDrop);
+
   const page = h('div', {},
     topbar(h('a', { class: 'btn btn-sm btn-ghost', href: '#/editor' }, icon('pen', 16), t('Éditeur'))),
     h('main', { class: 'home' },
       h('section', { class: 'hero' },
+        heroArt(),
         h('span', { class: 'pill' }, icon('shield', 15), t('100 % local · aucun envoi de fichier')),
         h('h1', {}, t('Le PDF, '), h('span', { class: 'grad' }, t('sans limites.'))),
         h('p', { class: 'lead' }, t('Modifiez, signez, fusionnez, compressez, convertissez et protégez vos documents. Tout se passe dans votre navigateur : vos fichiers ne quittent jamais votre appareil.')),
@@ -79,7 +86,19 @@ export function mount(root) {
         feat('wand', t('Annuler / rétablir'), t('Historique illimité et raccourcis clavier pour travailler vite.'))),
       h('p', { class: 'footer' }, 'FragPDF — ', t('fait avec soin.'))));
   root.append(page);
-  return () => {};
+  return () => { document.removeEventListener('dragover', onDragOver); document.removeEventListener('drop', onDrop); };
+}
+
+/** Fragments de pages flottants (décor de l'en-tête) : un clin d'œil au nom « Frag »PDF. */
+function heroArt() {
+  const lines = (...w) => w.map((x) => h('i', { class: 'l', style: { width: `${x}%` } }));
+  const mk = (cls, ...kids) => h('div', { class: `frag ${cls}`, 'aria-hidden': 'true' }, ...kids);
+  const sig = () => { const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('viewBox', '0 0 80 24'); s.innerHTML = '<path d="M2 18c8-14 12-14 14-4s6 6 10-2 6-8 10 0 8 4 14-4c4-4 8 2 12 0" fill="none" stroke="#6d4aff" stroke-width="2.2" stroke-linecap="round"/>'; return s; };
+  return h('div', { class: 'hero-art' },
+    mk('f1', h('b', { class: 'bar' }), ...lines(80, 62, 90, 55), h('i', { class: 'l hl', style: { width: '70%' } }), ...lines(85, 40)),
+    mk('f2', ...lines(70, 90, 50), h('span', { class: 'stamp' }, 'PAYÉ'), ...lines(88, 66)),
+    mk('f3', ...lines(60, 85), sig(), ...lines(45, 80, 70)),
+    mk('f4', h('b', { class: 'bar b2' }), ...lines(90, 50, 76), h('i', { class: 'l redact', style: { width: '64%' } }), ...lines(82, 58)));
 }
 
 function feat(ic, title, text) {

@@ -1,14 +1,14 @@
 // Outils basés sur une grille de vignettes : organiser, extraire, supprimer, pivoter.
 import { h, uid, formatBytes, downloadBlob, parsePageRanges, baseName } from '../lib/utils.js';
 import { icon } from '../ui/icons.js';
-import { t } from '../i18n.js';
+import { t, pagesLabel } from '../i18n.js';
 import { makeDropzone, loadPdfFile } from '../lib/ingest.js';
 import { openPdf } from '../lib/pdfjs.js';
 import { renderThumb, lazy } from '../lib/thumbs.js';
 import { applyPageLayout, extractPages, deletePages, rotatePages, splitGroups } from '../lib/pdf-ops.js';
 import { progressModal } from '../ui/modal.js';
 import { toastError, toast } from '../ui/toast.js';
-import { setPending } from '../lib/session.js';
+import { setPending, takePending } from '../lib/session.js';
 import { navigate } from '../ui/chrome.js';
 import { ui } from './framework.js';
 
@@ -166,11 +166,11 @@ function gridTool(cfg) {
         }
         if (cfg.remove && cfg.select) bar.append(h('button', { class: 'btn btn-sm btn-danger', disabled: !sel, onclick: () => { pages = pages.filter((p) => !p.selected); render(true); } }, icon('trash', 15), t('Supprimer la sélection')));
         if (cfg.blank) bar.append(h('button', { class: 'btn btn-sm', onclick: () => { newBlank(pages.length - 1); render(true); } }, icon('plus', 15), t('Page blanche à la fin')));
-        bar.append(h('span', { class: 'spacer' }), h('span', { class: 'muted' }, `${pages.length} ${t('pages')} · ${sel} ${t('sélectionnée(s)')}`));
+        bar.append(h('span', { class: 'spacer' }), h('span', { class: 'muted' }, `${pagesLabel(pages.length)} · ${sel} ${t('sélectionnée(s)')}`));
         extraCtl = cfg.extra?.({ doc, pages, selected }) || null;
         const grid = h('div', { class: 'page-grid' }, pages.map(pageCard));
         const side = h('div', {},
-          h('div', { class: 'panel' }, h('h3', {}, doc.name), h('p', { class: 'muted' }, `${doc.pages} ${t('pages')} · ${formatBytes(doc.size)}`),
+          h('div', { class: 'panel' }, h('h3', {}, doc.name), h('p', { class: 'muted' }, `${pagesLabel(doc.pages)} · ${formatBytes(doc.size)}`),
             cfg.hint ? ui.note(t(cfg.hint)) : null, extraCtl ? extraCtl.el : null,
             h('button', { class: 'btn btn-primary btn-lg run-btn', onclick: save }, icon(cfg.icon || 'save', 18), t(cfg.saveLabel))),
           h('div', { style: { height: '10px' } }),
@@ -180,6 +180,11 @@ function gridTool(cfg) {
       }
 
       render();
+      const pend = takePending();
+      if (pend) {
+        doc = { ...pend, pages: 0 };
+        openPdf(pend.bytes).then((p) => { pdf = p; doc.pages = p.numPages; pages = Array.from({ length: p.numPages }, (_, i) => ({ id: uid(), src: i, rotate: 0, selected: cfg.selectAll ?? false, removed: false })); render(); });
+      }
       return () => pdf?.destroy();
     },
   };
