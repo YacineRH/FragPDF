@@ -10,7 +10,13 @@ import { degrees } from 'pdf-lib';
 export async function runOcr(bytes, { lang = 'fra', scale = 2 }, onProgress) {
   const { createWorker } = await import('tesseract.js');
   let pageProgress = 0;
+  // worker, cœur WASM et langues fra/eng sont servis localement ; les autres langues viennent du CDN officiel de Tesseract
+  const base = new URL((import.meta.env.BASE_URL || './') + 'tesseract/', document.baseURI).href.replace(/\/$/, '');
+  const hosted = lang.split('+').every((l) => ['fra', 'eng'].includes(l));
   const worker = await createWorker(lang, 1, {
+    workerPath: `${base}/worker.min.js`,
+    corePath: `${base}/core`,
+    ...(hosted ? { langPath: `${base}/lang` } : {}),
     logger: (m) => { if (m.status === 'recognizing text') onProgress?.(pageProgress + m.progress * pageStep, null); },
   });
   const pdf = await openPdf(bytes);
@@ -26,13 +32,16 @@ export async function runOcr(bytes, { lang = 'fra', scale = 2 }, onProgress) {
       onProgress?.(pageProgress, `Page ${i} / ${n}`);
       const page = await pdf.getPage(i);
       const canvas = await renderPageToCanvas(page, scale);
-      const { data } = await worker.recognize(canvas);
+      // tesseract.js ≥ 6 : les mots sont dans data.blocks → paragraphes → lignes → mots
+      const { data } = await worker.recognize(canvas, {}, { blocks: true });
+      const words = [];
+      for (const b of data.blocks || []) for (const p of b.paragraphs || []) for (const l of p.lines || []) for (const w of l.words || []) words.push(w);
       const vp1 = page.getViewport({ scale: 1 });
       const k = vp1.width / canvas.width;
       const pPage = doc.getPage(i - 1);
       const geo = pageGeometry(pPage);
       pPage.pushOperators(PDFOperator.of('Tr', [PDFNumber.of(3)]));
-      for (const w of data.words || []) {
+      for (const w of words) {
         if (!w.text?.trim() || w.confidence < 25) continue;
         const text = fonts.sanitize(font, w.text);
         const bw = (w.bbox.x1 - w.bbox.x0) * k, bh = (w.bbox.y1 - w.bbox.y0) * k;

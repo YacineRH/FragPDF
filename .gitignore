@@ -7,3 +7,4 @@ public/pdfjs
 public/qpdf
 scripts/fixtures
 public/__test
+public/tesseract

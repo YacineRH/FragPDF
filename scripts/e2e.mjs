@@ -414,6 +414,14 @@ await test('scanner : capture caméra (simulée) → PDF', async () => {
   eq((await PDFDocument.load(fs.readFileSync(f))).getPageCount(), 2);
   await b.close();
 });
+await test('OCR hors ligne (français) : un PDF image devient cherchable', async () => {
+  const [img] = await runTool('grayscale', ['sample.pdf']);
+  const before = (await textOfBytes(fs.readFileSync(img)))[0];
+  ok(!before.trim(), 'le PDF de départ ne contient que des images');
+  const [f] = await runTool('ocr', [img], { setup: async (p) => { await p.selectOption('.panel select >> nth=0', 'fra'); } });
+  const txt = (await textOfBytes(fs.readFileSync(f)))[0];
+  ok(/Facture|Soci[eé]t[eé]|Exemple/i.test(txt), 'texte reconnu : ' + txt.slice(0, 120));
+});
 await test('PDF → texte et PDF → Word', async () => {
   const [t] = await runTool('pdf2text', ['sample.pdf']);
   ok(fs.readFileSync(t, 'utf8').includes('Facture'));

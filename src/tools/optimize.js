@@ -63,7 +63,7 @@ export const repair = fileTool({
   },
 });
 
-const LANGS = [['fra', 'Français'], ['eng', 'English'], ['spa', 'Español'], ['deu', 'Deutsch'], ['ita', 'Italiano'], ['por', 'Português'], ['nld', 'Nederlands'], ['ara', 'العربية'], ['rus', 'Русский']];
+const LANGS = [['fra', 'Français'], ['eng', 'English'], ['fra+eng', 'Français + English'], ['spa', 'Español'], ['deu', 'Deutsch'], ['ita', 'Italiano'], ['por', 'Português'], ['nld', 'Nederlands'], ['ara', 'العربية'], ['rus', 'Русский']];
 
 export const ocr = fileTool({
   accept: 'pdf', multiple: false, runLabel: 'Lancer la reconnaissance', runIcon: 'ocr',
@@ -72,7 +72,7 @@ export const ocr = fileTool({
     const scale = ui.select([['1.5', t('Rapide')], ['2', t('Équilibré')], ['3', t('Précis (lent)')]], '2');
     return {
       el: h('div', {}, ui.field(t('Langue du document'), lang), ui.field(t('Qualité'), scale),
-        ui.note(t('Le texte reconnu est ajouté de façon invisible sous l’image : le document garde son apparence mais devient cherchable et copiable. Les données de langue sont téléchargées une fois depuis Internet ; vos pages restent sur votre appareil.'))),
+        ui.note(t('Le texte reconnu est ajouté de façon invisible sous l’image : le document garde son apparence mais devient cherchable et copiable. Le français et l’anglais fonctionnent hors ligne ; les autres langues sont téléchargées une fois depuis Internet (vos pages restent sur votre appareil).'))),
       get: () => ({ lang: lang.value, scale: parseFloat(scale.value) }),
     };
   },

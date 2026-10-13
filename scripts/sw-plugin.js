@@ -19,7 +19,7 @@ export default function swPlugin() {
     closeBundle() {
       const files = walk(outDir)
         .map((p) => relative(outDir, p).split(sep).join('/'))
-        .filter((p) => p !== 'sw.js' && !p.endsWith('.map') && !p.startsWith('pdfjs/cmaps/') && !p.startsWith('pdfjs/wasm/'));
+        .filter((p) => p !== 'sw.js' && !p.endsWith('.map') && !p.startsWith('pdfjs/cmaps/') && !p.startsWith('pdfjs/wasm/') && !p.startsWith('tesseract/'));
       const version = Date.now().toString(36);
       const src = `// Généré au build — ne pas modifier.
 const CACHE = 'fragpdf-${version}';
@@ -42,7 +42,7 @@ self.addEventListener('fetch', (e) => {
     if (hit) return hit;
     try {
       const res = await fetch(req);
-      if (res.ok && (url.pathname.includes('/pdfjs/') || url.pathname.includes('/assets/'))) cache.put(req, res.clone());
+      if (res.ok && (url.pathname.includes('/pdfjs/') || url.pathname.includes('/assets/') || url.pathname.includes('/tesseract/'))) cache.put(req, res.clone());
       return res;
     } catch (err) {
       if (req.mode === 'navigate') { const idx = await cache.match('./'); if (idx) return idx; }
