@@ -22,6 +22,7 @@ export async function openPdf(bytes, password) {
     wasmUrl: abs('pdfjs/wasm/'),
     iccUrl: abs('pdfjs/iccs/'),
     isEvalSupported: false,
+    fontExtraProperties: true, // expose le nom réel des polices (détection gras / italique / famille)
   });
   const doc = await task.promise;
   // pdf.js 6 : la destruction passe par la tâche de chargement

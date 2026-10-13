@@ -2,6 +2,7 @@
 // (l'original est recouvert par un aplat de la couleur du fond, puis remplacé par un nouveau texte).
 import { h } from '../lib/utils.js';
 import { pdfjs } from '../lib/pdfjs.js';
+import { cssFont, ensureFontLoaded } from '../lib/fonts.js';
 
 const ASC = 0.905, DESC = 0.212;
 const BASELINE_OFFSET = (1.25 - (ASC + DESC)) / 2 + ASC; // ≈ 0.9635 × taille
@@ -18,6 +19,31 @@ export function guessFont(fontName = '', fontObj = {}, family = '') {
   else if (/courier|mono|consolas|menlo|typewriter|lucida console|andale/.test(n) || fontObj.isMonospace || family === 'monospace') fontId = 'courier';
   else if ((/times|serif|georgia|garamond|palatino|minion|cambria|bookman|baskerville|century|didot|bodoni/.test(n) && !/sans/.test(n)) || ((fontObj.isSerifFont || family === 'serif') && !/arial|helvetica|calibri|verdana|tahoma/.test(n))) fontId = 'times';
   return { fontId, bold, italic };
+}
+
+const CANDIDATES = { sans: ['helvetica', 'inter', 'roboto', 'montserrat'], serif: ['times', 'lora', 'playfair-display'], mono: ['courier', 'roboto-mono'] };
+const CAT_OF = { helvetica: 'sans', inter: 'sans', roboto: 'sans', montserrat: 'sans', times: 'serif', lora: 'serif', 'playfair-display': 'serif', courier: 'mono', 'roboto-mono': 'mono' };
+let measureCtx = null;
+
+/** Choisit, dans la même famille, la police dont la largeur colle le mieux au texte d'origine (même taille). */
+export async function bestFontFor(text, width, size, bold, italic, fontId) {
+  const cat = CAT_OF[fontId];
+  if (!cat || !text.trim() || width < 8) return fontId;
+  measureCtx ||= document.createElement('canvas').getContext('2d');
+  const errOf = async (id) => {
+    await ensureFontLoaded(id);
+    measureCtx.font = cssFont(id, bold, italic, 100);
+    return Math.abs((measureCtx.measureText(text).width * size) / 100 / width - 1);
+  };
+  let best = fontId, bestErr = await errOf(fontId);
+  const baseErr = bestErr;
+  for (const id of CANDIDATES[cat]) {
+    if (id === fontId) continue;
+    const err = await errOf(id);
+    if (err < bestErr) { best = id; bestErr = err; }
+  }
+  // on ne change de police que si le gain de fidélité est net (> 4 points d'écart de largeur)
+  return baseErr - bestErr > 0.04 ? best : fontId;
 }
 
 function quantKey(r, g, b) { return ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4); }
@@ -166,13 +192,15 @@ export class TextEditTool {
       const done = existing.some((a) => a.covers.some((c) => Math.abs(c.x - (b.x - 1)) < 3 && Math.abs(c.y - (b.top - 1)) < 3));
       if (done) continue;
       const box = h('div', { class: 'tx-box', title: b.text, style: { left: `${b.x - 1}px`, top: `${b.top - 1}px`, width: `${b.w + 2}px`, height: `${b.h + 2}px` } });
-      box.addEventListener('click', (e) => { e.stopPropagation(); this.editBlocks(i, [b]); });
+      box.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); this.annots.endEdit(); this.editBlocks(i, [b]); });
       layer.append(box);
     }
     // sélection par rectangle
     layer.addEventListener('pointerdown', (e) => {
       if (e.target !== layer) return;
       e.preventDefault();
+      e.stopPropagation();
+      this.annots.endEdit();
       const start = this.viewer.pointToPage(e.clientX, e.clientY, i);
       const ghost = h('div', { class: 'ghost' });
       layer.append(ghost);
@@ -197,7 +225,7 @@ export class TextEditTool {
   }
 
   /** Crée une annotation texte à partir d'un ou plusieurs blocs de texte. */
-  editBlocks(pageIdx, blocks) {
+  async editBlocks(pageIdx, blocks) {
     const st = this.state;
     const d = this.viewer.dom(pageIdx);
     const sorted = [...blocks].sort((a, b) => a.base - b.base || a.x - b.x);
@@ -218,11 +246,13 @@ export class TextEditTool {
       const c = sampleColors(d.canvas, st.pages[pageIdx].w, { x: b.x, y: b.top, w: Math.max(b.w, 4), h: b.h });
       return { x: b.x - 1, y: b.top - 0.5, w: b.w + 2, h: b.h + 1, color: c.bg };
     });
+    let fontId = first.font.fontId;
+    if (rows.length === 1 && sorted.length === 1) fontId = await bestFontFor(first.text, first.w, fs, first.font.bold, first.font.italic, fontId);
     const baselineTop = first.base - ((lineHeight * fs) - (ASC + DESC) * fs) / 2 - ASC * fs;
     st.checkpoint();
     const ann = st.addAnnot({
       type: 'text', page: pageIdx, x: left, y: baselineTop, w: Math.max(...sorted.map((b) => b.x + b.w)) - left + 4, h: lines.length * lineHeight * fs,
-      text: lines.join('\n'), fontId: first.font.fontId, bold: first.font.bold, italic: first.font.italic, size: fs, color: fg, lineHeight,
+      text: lines.join('\n'), fontId, bold: first.font.bold, italic: first.font.italic, size: fs, color: fg, lineHeight,
       align: 'left', autoW: true, covers, opacity: 1, underline: false, bg: null,
     });
     void bg;
