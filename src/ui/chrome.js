@@ -20,7 +20,7 @@ export function themeToggle() {
 }
 
 // L'anglais n'est que partiellement traduit : le sélecteur reste masqué tant que la traduction n'est pas complète.
-export const LANG_SWITCH = false;
+export const LANG_SWITCH = true;
 export function langToggle() {
   if (!LANG_SWITCH) return document.createComment('lang');
   const btn = h('button', { class: 'btn btn-sm btn-ghost', title: 'Langue / Language' }, getLang().toUpperCase());

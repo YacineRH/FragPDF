@@ -8,13 +8,13 @@ export const merge = fileTool({
   dropTitle: 'Glissez les PDF à fusionner',
   runLabel: 'Fusionner les PDF', runIcon: 'merge',
   options: (ctx) => {
-    const name = h('input', { class: 'input', value: 'fusion' });
+    const name = h('input', { class: 'input', value: t('fusion') });
     return {
       el: h('div', {},
         ui.note(t('Glissez les vignettes pour changer l’ordre. Les documents seront assemblés de gauche à droite.')),
         h('div', { style: { height: '.8rem' } }),
         ui.field(t('Nom du fichier'), name)),
-      get: () => ({ name: (name.value || 'fusion').replace(/\.pdf$/i, '') }),
+      get: () => ({ name: (name.value || t('fusion')).replace(/\.pdf$/i, '') }),
     };
   },
   async run({ files, opts, progress }) {

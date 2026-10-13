@@ -85,7 +85,9 @@ function textStampTool({ kind }) {
       const refresh = () => ctx.__preview?.__update?.();
 
       if (kind === 'numbers') {
-        formatSel = ui.select([['{n}', '1, 2, 3'], ['Page {n}', 'Page 1'], ['Page {n} sur {total}', 'Page 1 sur 10'], ['{n} / {total}', '1 / 10'], ['- {n} -', '- 1 -'], ['custom', t('Personnalisé…')]], 'Page {n} sur {total}');
+        const fmts = ['{n}', t('Page {n}'), t('Page {n} sur {total}'), '{n} / {total}', '- {n} -'];
+        const sample = (f) => f.replace('{n}', '1').replace('{total}', '10');
+        formatSel = ui.select([[fmts[0], '1, 2, 3'], ...fmts.slice(1).map((f) => [f, sample(f)]), ['custom', t('Personnalisé…')]], fmts[2]);
         text = h('input', { class: 'input', value: '{n}/{total}', hidden: true });
         formatSel.addEventListener('change', () => { text.hidden = formatSel.value !== 'custom'; refresh(); });
         text.addEventListener('input', refresh);
@@ -100,7 +102,7 @@ function textStampTool({ kind }) {
         pos = positionPicker('top-center', refresh);
       } else {
         mode = ui.seg([['text', t('Texte')], ['image', t('Image')]], 'text', () => { drawMode(); refresh(); });
-        text = h('input', { class: 'input', value: 'CONFIDENTIEL' });
+        text = h('input', { class: 'input', value: t('CONFIDENTIEL') });
         text.addEventListener('input', refresh);
         rotation = ui.range(-90, 90, 45, 5, (v) => `${v}°`);
         rotation.input.addEventListener('input', refresh);

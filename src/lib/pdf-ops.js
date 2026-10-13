@@ -10,8 +10,17 @@ import { rasterizeImage } from './utils.js';
 
 export const PRODUCER = 'FragPDF';
 
-export function loadDoc(bytes) {
-  return PDFDocument.load(bytes, { ignoreEncryption: false, updateMetadata: false, throwOnInvalidObject: false });
+const LOAD_OPTS = { ignoreEncryption: false, updateMetadata: false, throwOnInvalidObject: false };
+
+/** Charge un document pdf-lib ; un PDF protégé uniquement par mot de passe propriétaire est déchiffré à la volée (QPDF). */
+export async function loadDoc(bytes) {
+  try {
+    return await PDFDocument.load(bytes, LOAD_OPTS);
+  } catch (e) {
+    if (!/encrypt/i.test(String(e?.message))) throw e;
+    const { decryptPdf } = await import('./security.js');
+    return PDFDocument.load(await decryptPdf(bytes, ''), LOAD_OPTS);
+  }
 }
 
 export async function save(doc, { objectStreams = true } = {}) {

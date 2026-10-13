@@ -20,6 +20,9 @@ export class Viewer {
     this.rerenderDebounced = debounce(() => this.refreshVisible(true), 140);
     scroller.addEventListener('scroll', () => this.onScroll(), { passive: true });
     this.scrollRAF = 0;
+    this.fitMode = true;
+    this.onResize = debounce(() => { if (this.fitMode && this.state.pages.length) this.fitWidth(); }, 150);
+    window.addEventListener('resize', this.onResize);
   }
 
   onPageDom(fn) { this.listeners.add(fn); }
@@ -72,6 +75,7 @@ export class Viewer {
   setZoom(z, anchor) {
     const old = this.state.zoom;
     z = clamp(z, 0.25, 5);
+    this.fitMode = false;
     if (Math.abs(z - old) < 0.001) return;
     const sc = this.scroller;
     const cx = anchor?.x ?? sc.clientWidth / 2, cy = anchor?.y ?? sc.clientHeight / 2;
@@ -88,6 +92,7 @@ export class Viewer {
     const maxW = Math.max(...this.state.pages.map((p) => p.w));
     const avail = this.scroller.clientWidth - 48;
     this.setZoomAbs(clamp(avail / maxW, 0.3, 3));
+    this.fitMode = true;
   }
 
   fitPage() {
@@ -206,5 +211,5 @@ export class Viewer {
     return null;
   }
 
-  destroy() { this.io?.disconnect(); this.jobId++; }
+  destroy() { this.io?.disconnect(); this.jobId++; window.removeEventListener('resize', this.onResize); }
 }

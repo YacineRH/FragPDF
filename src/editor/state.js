@@ -1,6 +1,7 @@
 // État de l'éditeur : document, annotations, sélection, outil actif, historique (annuler/rétablir).
 import { uid } from '../lib/utils.js';
 import { openPdf } from '../lib/pdfjs.js';
+import { t } from '../i18n.js';
 
 export const DEFAULT_OPTS = {
   text: { fontId: 'helvetica', size: 18, color: '#111111', bold: false, italic: false, underline: false, align: 'left', bg: null, opacity: 1 },
@@ -30,6 +31,7 @@ export class EditorState {
     this.sel = new Set();
     this.tool = 'select';
     this.opts = structuredClone(DEFAULT_OPTS);
+    this.opts.stamp.label = t('APPROUVÉ');
     this.zoom = 1;
     this.currentPage = 0;
     this.dirty = false;

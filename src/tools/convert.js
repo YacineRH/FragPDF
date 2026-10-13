@@ -12,11 +12,11 @@ export const imgToPdf = fileTool({
     const size = ui.select([['fit', t('Taille de l’image')], ['a4', 'A4'], ['letter', 'Letter'], ['a3', 'A3'], ['a5', 'A5'], ['legal', 'Legal']], 'a4');
     const orient = ui.select([['auto', t('Automatique')], ['portrait', t('Portrait')], ['landscape', t('Paysage')]], 'auto');
     const margin = ui.range(0, 80, 20, 2, (v) => `${v} pt`);
-    const name = h('input', { class: 'input', value: 'images' });
+    const name = h('input', { class: 'input', value: t('images') });
     return {
       el: h('div', {}, ui.note(t('Glissez les vignettes pour modifier l’ordre des pages.')), h('div', { style: { height: '.8rem' } }),
         ui.field(t('Format de page'), size), ui.field(t('Orientation'), orient), ui.field(t('Marge'), margin.el), ui.field(t('Nom du fichier'), name)),
-      get: () => ({ size: size.value, orientation: orient.value, margin: +margin.input.value, name: (name.value || 'images').replace(/\.pdf$/i, '') }),
+      get: () => ({ size: size.value, orientation: orient.value, margin: +margin.input.value, name: (name.value || t('images')).replace(/\.pdf$/i, '') }),
     };
   },
   async run({ files, opts, progress }) {
@@ -29,7 +29,7 @@ export const imgToPdf = fileTool({
 export const pdfToImg = fileTool({
   accept: 'pdf', multiple: false, runLabel: 'Convertir en images', runIcon: 'image',
   options: () => {
-    const fmt = ui.select([['png', 'PNG (sans perte)'], ['jpg', 'JPG (léger)'], ['webp', 'WebP']], 'png');
+    const fmt = ui.select([['png', t('PNG (sans perte)')], ['jpg', t('JPG (léger)')], ['webp', 'WebP']], 'png');
     const dpi = ui.select([['1', '72 dpi'], ['1.5', '108 dpi'], ['2', '144 dpi'], ['3', '216 dpi'], ['4.17', '300 dpi']], '2');
     return { el: h('div', {}, ui.field(t('Format'), fmt), ui.field(t('Résolution'), dpi)), get: () => ({ format: fmt.value, scale: parseFloat(dpi.value) }) };
   },

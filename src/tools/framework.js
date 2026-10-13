@@ -136,7 +136,7 @@ export function fileTool(def) {
         if (!state.files.length) {
           host.append(makeDropzone({
             accept: def.accept, multiple: !!def.multiple, onFiles: addFiles,
-            title: def.dropTitle || (def.multiple ? t('Glissez vos fichiers ici') : t('Glissez votre fichier ici')),
+            title: def.dropTitle ? t(def.dropTitle) : (def.multiple ? t('Glissez vos fichiers ici') : t('Glissez votre fichier ici')),
             icon: h('div', { class: 'big-ic' }, icon('upload', 28)),
           }));
           optCtl = null;
@@ -149,7 +149,7 @@ export function fileTool(def) {
         if (def.leftExtra) left.append(def.leftExtra(ctx));
         const right = h('div', {},
           optCtl ? h('div', { class: 'panel' }, h('h3', {}, t('Options')), optCtl.el) : null,
-          h('button', { class: 'btn btn-primary btn-lg run-btn', onclick: run }, icon(def.runIcon || 'zap', 18), def.runLabel || t('Lancer')));
+          h('button', { class: 'btn btn-primary btn-lg run-btn', onclick: run }, icon(def.runIcon || 'zap', 18), def.runLabel ? t(def.runLabel) : t('Lancer')));
         host.append(h('div', { class: 'tool-layout' }, left, right));
       }
 

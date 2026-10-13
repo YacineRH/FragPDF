@@ -3,6 +3,7 @@
 import { h, clamp } from '../lib/utils.js';
 import { cssFont, ensureFontLoaded } from '../lib/fonts.js';
 import { icon } from '../ui/icons.js';
+import { t } from '../i18n.js';
 
 export const rgba = (hex, a = 1) => {
   let s = (hex || '#000000').replace('#', '');
@@ -160,7 +161,7 @@ export class AnnotManager {
         if (a.bg) el.style.background = rgba(a.bg, a.bgOpacity ?? 1);
         if (a.rot) el.style.transform = `rotate(${a.rot}deg)`;
         el.textContent = a.text;
-        el.dataset.ph = 'Votre texte';
+        el.dataset.ph = t('Votre texte');
         if (!a.text) el.classList.add('is-empty');
         els.push(el);
         requestAnimationFrame(() => { if (el.isConnected && !this.editing) this.measure(a, el); });
@@ -233,7 +234,7 @@ export class AnnotManager {
         break;
       }
       case 'whiteout': { const el = base(); place(el); el.style.background = a.color || '#fff'; els.push(el); break; }
-      case 'redact': { const el = base(); place(el); el.append(h('span', {}, 'CAVIARDÉ')); els.push(el); break; }
+      case 'redact': { const el = base(); place(el); el.append(h('span', {}, t('CAVIARDÉ'))); els.push(el); break; }
       case 'stamp': {
         const el = base();
         place(el);

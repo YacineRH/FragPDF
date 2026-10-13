@@ -4,8 +4,9 @@ import './styles/tool.css';
 import './styles/editor.css';
 import { initLang, t } from './i18n.js';
 import { h } from './lib/utils.js';
+import { toastError } from './ui/toast.js';
 
-initLang();
+await initLang();
 
 const app = document.getElementById('app');
 let cleanup = null;
@@ -35,6 +36,14 @@ async function route() {
     app.replaceChildren(h('div', { class: 'home' }, h('h2', {}, t('Oups, une erreur est survenue')), h('pre', {}, String(e?.stack || e)), h('a', { class: 'btn', href: '#/' }, t('Accueil'))));
   }
 }
+
+// filet de sécurité : toute erreur non gérée est signalée à l'utilisateur plutôt que d'échouer en silence
+window.addEventListener('unhandledrejection', (e) => {
+  const msg = String(e.reason?.message || e.reason || '');
+  if (/RenderingCancelled|AbortError|ResizeObserver/.test(msg)) return;
+  console.error(e.reason);
+  toastError(msg.length < 160 ? msg : 'Une erreur est survenue.');
+});
 
 window.addEventListener('hashchange', route);
 route();

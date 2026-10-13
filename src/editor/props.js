@@ -15,7 +15,7 @@ export const TITLES = {
   highlightbox: 'Surligneur',
 };
 
-const STAMPS = ['APPROUVÉ', 'REFUSÉ', 'BROUILLON', 'CONFIDENTIEL', 'URGENT', 'COPIE', 'PAYÉ', 'ORIGINAL', 'À REVOIR', 'SIGNÉ'];
+const STAMPS = ['APPROUVÉ', 'REFUSÉ', 'BROUILLON', 'CONFIDENTIEL', 'URGENT', 'COPIE', 'PAYÉ', 'ORIGINAL', 'À REVOIR', 'SIGNÉ'].map((s) => t(s));
 const STAMP_COLORS = ['#16a34a', '#e5384f', '#2563eb', '#f97316', '#7c3aed', '#111111'];
 
 export class PropsPanel {
@@ -159,7 +159,7 @@ export class PropsPanel {
         break;
       }
       case 'link': {
-        const url = h('input', { class: 'input sm', value: val('url') || 'https://', placeholder: 'https://… ou #page=3' });
+        const url = h('input', { class: 'input sm', value: val('url') || 'https://', placeholder: t('https://… ou #page=3') });
         url.addEventListener('input', () => apply({ url: url.value }));
         R(t('Destination'), url);
         hint(t('Saisissez une adresse web, ou #page=3 pour aller à la page 3.'));
