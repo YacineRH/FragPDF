@@ -35,7 +35,7 @@
 .tool-ic { flex: none; width: 44px; height: 44px; border-radius: 13px; display: grid; place-items: center; color: var(--tc, var(--accent)); background: color-mix(in srgb, var(--tc, var(--accent)) 14%, transparent); }
 .tool-card h4 { font-size: 1rem; margin-bottom: .15rem; }
 .tool-card p { font-size: .84rem; color: var(--muted); margin: 0; line-height: 1.4; }
-.tool-card .badge { position: absolute; top: 10px; right: 10px; font-size: .66rem; font-weight: 700; background: var(--brand); color: #fff; padding: .1rem .5rem; border-radius: 99px; }
+.tool-card .badge { display: inline-block; vertical-align: middle; margin-left: .5rem; font-size: .62rem; font-weight: 700; background: var(--brand); color: #fff; padding: .08rem .5rem; border-radius: 99px; letter-spacing: .02em; }
 
 .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 3.4rem; }
 .feat { padding: 1.2rem; border-radius: var(--radius); background: color-mix(in srgb, var(--surface) 70%, transparent); border: 1px solid var(--border); }

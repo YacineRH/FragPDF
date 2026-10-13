@@ -160,7 +160,8 @@ export class AnnotManager {
         if (a.bg) el.style.background = rgba(a.bg, a.bgOpacity ?? 1);
         if (a.rot) el.style.transform = `rotate(${a.rot}deg)`;
         el.textContent = a.text;
-        if (!a.text) el.classList.add('empty');
+        el.dataset.ph = 'Votre texte';
+        if (!a.text) el.classList.add('is-empty');
         els.push(el);
         requestAnimationFrame(() => { if (el.isConnected && !this.editing) this.measure(a, el); });
         break;
@@ -728,6 +729,7 @@ export class AnnotManager {
     el.oninput = () => {
       if (!this.editing.checkpointed) { st.checkpoint(); this.editing.checkpointed = true; }
       a.text = el.innerText.replace(/\n$/, '');
+      el.classList.toggle('is-empty', !a.text);
       this.editing.typed = true;
       this.measure(a, el);
       st.dirty = true;

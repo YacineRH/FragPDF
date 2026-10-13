@@ -9,7 +9,7 @@ import { loadPdfFile, isPdf, isImage } from '../lib/ingest.js';
 import { takePending, prefs } from '../lib/session.js';
 import { EditorState } from './state.js';
 import { Viewer } from './viewer.js';
-import { AnnotManager, HL_TOOLS, bboxOf } from './annots.js';
+import { AnnotManager, HL_TOOLS, bboxOf, translatePatch } from './annots.js';
 import { PropsPanel, TITLES } from './props.js';
 import { Sidebar } from './sidebar.js';
 import { FindBar } from './find.js';
@@ -340,9 +340,7 @@ export async function mount(root, { query }) {
   function nudge(dx, dy) {
     if (Date.now() - nudgeT > 600) state.checkpoint();
     nudgeT = Date.now();
-    import('./annots.js').then(({ translatePatch }) => {
-      state.selected().forEach((a) => state.updateAnnot(a.id, translatePatch(a, dx, dy)));
-    });
+    state.selected().forEach((a) => state.updateAnnot(a.id, translatePatch(a, dx, dy)));
   }
   function pasteClipboard() {
     state.checkpoint();
@@ -508,12 +506,12 @@ export async function mount(root, { query }) {
   /* ---------- état vide ---------- */
   const fileIn = h('input', { type: 'file', accept: '.pdf,application/pdf', hidden: true });
   fileIn.addEventListener('change', async () => { const f = fileIn.files[0]; fileIn.value = ''; if (!f) return; const doc = await loadPdfFile(f); if (doc) openDocument(doc); });
-  const emptyEl = h('div', { class: 'empty' },
-    h('div', { class: 'empty-card' },
+  const emptyEl = h('div', { class: 'ed-empty' },
+    h('div', { class: 'ed-empty-card' },
       h('div', { class: 'big-ic' }, icon('upload', 30)),
       h('h2', {}, t('Ouvrez un PDF pour commencer')),
       h('p', { class: 'muted' }, t('Glissez-déposez un fichier ici, ou choisissez-le sur votre appareil. Rien n’est envoyé sur Internet.')),
-      h('div', { class: 'empty-actions' },
+      h('div', { class: 'ed-empty-actions' },
         h('button', { class: 'btn btn-primary btn-lg', onclick: () => fileIn.click() }, icon('upload', 18), t('Choisir un PDF')),
         h('button', { class: 'btn btn-lg', onclick: async () => openDocument({ name: 'nouveau.pdf', bytes: await blankDocument() }) }, icon('plus', 18), t('Page vierge')),
         h('a', { class: 'btn btn-lg btn-ghost', href: '#/tool/img2pdf' }, icon('image', 18), t('Depuis des images'))),

@@ -13,9 +13,8 @@ export function toolHref(tool) {
 
 function toolCard(tool, color) {
   return h('a', { class: 'tool-card', href: toolHref(tool), style: { '--tc': color } },
-    tool.badge ? h('span', { class: 'badge' }, tool.badge) : null,
     h('span', { class: 'tool-ic' }, icon(tool.icon, 24)),
-    h('div', {}, h('h4', {}, t(tool.title)), h('p', {}, t(tool.desc))));
+    h('div', {}, h('h4', {}, t(tool.title), tool.badge ? h('span', { class: 'badge' }, tool.badge) : null), h('p', {}, t(tool.desc))));
 }
 
 export function mount(root) {

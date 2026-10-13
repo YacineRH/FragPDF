@@ -126,7 +126,9 @@ export function createFontEmbedder(pdfDoc, PDFLib, fontkit) {
     /** Retire les caractères que la police ne sait pas encoder (dernier recours). */
     sanitize(font, text) {
       let out = '';
-      for (const ch of text) {
+      for (const ch of text.replace(/\r\n?/g, '\n')) {
+        if (ch === '\n') { out += ch; continue; }
+        if (ch === '\t') { out += '    '; continue; }
         try { font.encodeText(ch); out += ch; } catch { out += '?'; }
       }
       return out;

@@ -30,8 +30,8 @@ const ok = (c, msg) => { if (!c) throw new Error(msg || 'assertion'); };
 async function openEditor(file = 'sample.pdf') {
   await page.goto(URL + '#/');
   await page.goto(URL + '#/editor');
-  await page.waitForSelector('.empty input[type=file]', { state: 'attached' });
-  await page.setInputFiles('.empty input[type=file]', path.join(FIX, file));
+  await page.waitForSelector('.ed-empty input[type=file]', { state: 'attached' });
+  await page.setInputFiles('.ed-empty input[type=file]', path.join(FIX, file));
   await page.waitForFunction(() => window.__fragpdf?.state.pages.length > 0, null, { timeout: 15000 });
   await page.waitForTimeout(600);
 }
