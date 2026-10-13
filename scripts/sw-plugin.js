@@ -26,7 +26,7 @@ const CACHE = 'fragpdf-${version}';
 const PRECACHE = ${JSON.stringify(['./', ...files], null, 1)};
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(PRECACHE.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(PRECACHE.map((u) => new Request(u, { cache: 'reload' })))).then(() => { /* pas de skipWaiting : une mise à jour s'active à la prochaine ouverture, sans casser les onglets ouverts */ }));
 });
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k.startsWith('fragpdf-')).map((k) => caches.delete(k)))).then(() => self.clients.claim()));

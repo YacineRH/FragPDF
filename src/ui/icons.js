@@ -16,6 +16,7 @@ const P = {
   image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/>',
   text: '<path d="M5 6V4h14v2"/><path d="M12 4v16"/><path d="M9 20h6"/>',
   type: '<path d="M4 7V5h16v2"/><path d="M9 19h6"/><path d="M12 5v14"/>',
+  textedit: '<path d="M4 6V4h12v2"/><path d="M10 4v9"/><path d="M7.5 13h5"/><path d="M14 20l1-3.2 5.2-5.2a1.5 1.5 0 012.1 2.1L17.1 19z"/>',
   pen: '<path d="M4 20l1-4L17 4a2.1 2.1 0 013 3L8 19z"/><path d="M14 7l3 3"/>',
   pencil: '<path d="M3 21l4-1L20 7a2.8 2.8 0 00-4-4L3 16z"/><path d="M14 5l4 4"/>',
   sign: '<path d="M3 17c3-6 5-9 6-9s0 6 2 6 3-4 4-4 1 3 3 3 2-1 3-2"/><path d="M3 21h18"/>',

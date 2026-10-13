@@ -25,7 +25,7 @@ import { saveSession, loadSession, clearSession } from '../lib/autosave.js';
 import { scanDocument } from './autoredact.js';
 
 const RAIL = [
-  [['select', 'cursor', 'V'], ['edittext', 'type', 'E']],
+  [['select', 'cursor', 'V'], ['edittext', 'textedit', 'E']],
   [['text', 'text', 'T'], ['image', 'image', 'I'], ['sign', 'sign', 'S'], ['stamp', 'stamp', 'M']],
   [['highlight', 'highlight', 'H'], ['underline', 'underline', 'U'], ['strike', 'strike', 'K'], ['ink', 'pencil', 'D']],
   [['rect', 'square', 'R'], ['ellipse', 'circle', 'O'], ['line', 'line', 'L'], ['arrow', 'arrow', 'A']],
@@ -517,6 +517,7 @@ export async function mount(root, { query }) {
               if (!/\.pdf$/i.test(fn)) fn += '.pdf';
               downloadBlob(new Blob([bytes], { type: 'application/pdf' }), fn);
               state.dirty = false;
+              clearSession();
               pm.close();
               close();
               toast(t('PDF enregistré ({size}).', { size: formatBytes(bytes.length) }), 'success');

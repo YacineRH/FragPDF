@@ -212,6 +212,16 @@ await test('sélection multiple par rectangle (Maj + glisser)', async () => {
   await page.keyboard.up('Shift');
   eq(await page.evaluate(() => window.__fragpdf.state.sel.size), 2);
 });
+await test('sauvegarde automatique et reprise après rechargement', async () => {
+  await openEditor();
+  await page.evaluate(() => { window.__fragpdf.state.checkpoint(); window.__fragpdf.state.addAnnot({ type: 'rect', page: 1, x: 40, y: 40, w: 90, h: 50, stroke: '#00f', strokeW: 2, fill: null }, { select: false }); });
+  await page.waitForTimeout(2600);
+  await page.reload();
+  await page.waitForSelector('.restore button.btn-primary', { timeout: 10000 });
+  await page.click('.restore button.btn-primary');
+  await page.waitForFunction(() => window.__fragpdf?.state.annots.length === 1 && window.__fragpdf.state.pages.length === 3);
+  eq(await page.evaluate(() => window.__fragpdf.state.annots[0].page), 1);
+});
 await test('page tournée : l’export garde la rotation', async () => {
   await openEditor('rotated.pdf');
   await page.evaluate(() => window.__fragpdf.state.addAnnot({ type: 'rect', page: 0, x: 10, y: 10, w: 50, h: 40, stroke: '#f00', strokeW: 2, fill: null }, { select: false }));
