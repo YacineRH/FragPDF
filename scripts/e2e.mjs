@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
-import { launch } from './shot.mjs';
+import { launch, CHROME_PATH } from './shot.mjs';
 
 const PORT = 5199;
 const URL = `http://localhost:${PORT}/`;
@@ -402,7 +402,7 @@ await test('comparer deux PDF', async () => {
   ok(await page.evaluate(() => document.querySelectorAll('.cmp-words .ins').length > 0), 'mots ajoutés signalés');
 });
 await test('scanner : capture caméra (simulée) → PDF', async () => {
-  const b = await (await import('playwright-core')).chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] });
+  const b = await (await import('playwright-core')).chromium.launch({ executablePath: CHROME_PATH, args: ['--no-sandbox', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] });
   const ctx2 = await b.newContext({ permissions: ['camera'], acceptDownloads: true, locale: 'fr-FR' });
   const p2 = await ctx2.newPage();
   await p2.goto(URL + '#/tool/scan');
