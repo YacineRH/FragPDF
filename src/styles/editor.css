@@ -186,3 +186,6 @@
   .pages { padding: 12px 8px 80px; }
 }
 .sidebar-scroll.busy { cursor: progress; opacity: .6; pointer-events: none; transition: opacity .15s; }
+
+.restore { display: flex; align-items: center; gap: .8rem; text-align: left; margin-top: 1.4rem; padding: .8rem 1rem; border-radius: 14px; background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
+.restore > div { flex: 1; font-size: .9rem; } .restore svg { color: var(--accent); flex: none; }

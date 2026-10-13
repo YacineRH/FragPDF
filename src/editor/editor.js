@@ -20,7 +20,8 @@ import { imageFromBlob, imageFromDataURL } from './images.js';
 import { pickSignature } from './signature.js';
 import { blankDocument, insertPdf } from './pageops.js';
 import { loadAllPreviewFonts } from '../lib/fonts.js';
-import { uid } from '../lib/utils.js';
+import { uid, debounce } from '../lib/utils.js';
+import { saveSession, loadSession, clearSession } from '../lib/autosave.js';
 
 const RAIL = [
   [['select', 'cursor', 'V'], ['edittext', 'type', 'E']],
@@ -503,6 +504,21 @@ export async function mount(root, { query }) {
     void m;
   }
 
+  /* ---------- sauvegarde automatique ---------- */
+  const autosave = debounce(() => { if (state.pdf && state.dirty) saveSession(state); }, 1500);
+  ['annots', 'history', 'doc'].forEach((evt) => state.on(evt, autosave));
+  async function restoreSession(data) {
+    await openDocument({ name: data.name, bytes: data.bytes });
+    for (const a of data.assets) {
+      state.assets.set(a.id, { ...a, url: URL.createObjectURL(new Blob([a.bytes], { type: a.mime })) });
+    }
+    state.annots = data.annots;
+    state.formValues = new Map(data.formValues);
+    state.emit('annots', { all: true });
+    state.dirty = true;
+    toast(t('Travail restauré.'), 'success');
+  }
+
   /* ---------- état vide ---------- */
   const fileIn = h('input', { type: 'file', accept: '.pdf,application/pdf', hidden: true });
   fileIn.addEventListener('change', async () => { const f = fileIn.files[0]; fileIn.value = ''; if (!f) return; const doc = await loadPdfFile(f); if (doc) openDocument(doc); });
@@ -517,6 +533,16 @@ export async function mount(root, { query }) {
         h('a', { class: 'btn btn-lg btn-ghost', href: '#/tool/img2pdf' }, icon('image', 18), t('Depuis des images'))),
       fileIn));
   stage.append(emptyEl);
+  loadSession().then((data) => {
+    if (!data || state.pdf || !data.annots?.length) return;
+    const ago = Math.max(1, Math.round((Date.now() - data.savedAt) / 60000));
+    const card = h('div', { class: 'restore' },
+      icon('save', 20),
+      h('div', {}, h('b', {}, t('Reprendre « {name} » ?', { name: data.name })), h('div', { class: 'muted' }, t('{n} modification(s) · enregistré il y a {m} min', { n: data.annots.length, m: ago }))),
+      h('button', { class: 'btn btn-primary btn-sm', onclick: () => { card.remove(); restoreSession(data); } }, t('Reprendre')),
+      h('button', { class: 'btn btn-sm btn-ghost', onclick: () => { card.remove(); clearSession(); } }, t('Ignorer')));
+    emptyEl.querySelector('.ed-empty-card').append(card);
+  });
 
   // outil présélectionné via l'URL, document en attente (depuis l'accueil / un outil)
   if (window.innerWidth < 1180) { ed.classList.add('no-sidebar'); sidebarBtn.classList.remove('active'); }

@@ -1,7 +1,9 @@
 import { defineConfig } from 'vite';
+import swPlugin from './scripts/sw-plugin.js';
 
 export default defineConfig({
   base: './',
+  plugins: [swPlugin()],
   build: { target: 'es2022', chunkSizeWarningLimit: 2500 },
   worker: { format: 'es' },
   server: { host: true },

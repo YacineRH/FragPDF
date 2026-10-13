@@ -172,6 +172,75 @@ await test('page tournée : l’export garde la rotation', async () => {
   eq(doc.getPage(0).getRotation().angle, 90);
 });
 
+await test('surligner du texte par sélection', async () => {
+  await openEditor();
+  await page.click('[data-tool=highlight]');
+  const box = await page.evaluate(() => { const sp = [...document.querySelectorAll('.page-wrap:first-child .textLayer span')].find((s) => s.textContent.includes('Société')); const r = sp.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
+  await page.mouse.move(box.x + 2, box.y + box.h / 2); await page.mouse.down(); await page.mouse.move(box.x + box.w - 2, box.y + box.h / 2, { steps: 8 }); await page.mouse.up();
+  await page.waitForFunction(() => window.__fragpdf.state.annots.some((a) => a.type === 'highlight'));
+  const a = await page.evaluate(() => window.__fragpdf.state.annots.find((x) => x.type === 'highlight'));
+  ok(a.rects.length >= 1 && a.rects[0].w > 50, JSON.stringify(a.rects));
+});
+await test('image : insertion via l’outil + export', async () => {
+  await openEditor();
+  const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('[data-tool=image]')]);
+  await fc.setFiles(path.join(FIX, 'noise.png'));
+  await page.waitForFunction(() => window.__fragpdf.state.placing);
+  await page.mouse.click(500, 500);
+  await page.waitForFunction(() => window.__fragpdf.state.annots.some((a) => a.type === 'image'));
+  const doc = await PDFDocument.load(await exportBytes());
+  eq(doc.getPageCount(), 3);
+});
+await test('tampon, coche, note, lien, aplat', async () => {
+  await openEditor();
+  for (const [tool, x, y] of [['stamp', 500, 300], ['mark', 400, 400], ['note', 450, 500], ['link', 600, 600], ['whiteout', 700, 700]]) {
+    await page.click(`[data-tool=${tool}]`);
+    await page.mouse.click(x, y);
+    if (tool === 'note') { await page.keyboard.type('Une note'); }
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(150);
+  }
+  const types = await page.evaluate(() => window.__fragpdf.state.annots.map((a) => a.type).sort());
+  eq(types.join(','), 'link,mark,stamp,text,whiteout');
+  const doc = await PDFDocument.load(await exportBytes());
+  ok(doc.getPage(0).node.Annots()?.size() >= 1, 'annotation de lien présente');
+});
+await test('menu Fichier : page vierge, insertion de PDF, appliquer', async () => {
+  await openEditor();
+  await page.click('.ed-top .btn:has-text("Fichier")');
+  await page.click('.menu-item:has-text("Nouveau document vierge")');
+  await page.waitForFunction(() => window.__fragpdf.state.pages.length === 1 && window.__fragpdf.state.name === 'nouveau.pdf');
+  await page.evaluate(() => window.__fragpdf.state.addAnnot({ type: 'rect', page: 0, x: 50, y: 50, w: 100, h: 80, stroke: '#f00', strokeW: 2, fill: null }, { select: false }));
+  await page.click('.ed-top .btn:has-text("Fichier")');
+  await page.click('.menu-item:has-text("Appliquer les modifications")');
+  await page.waitForFunction(() => window.__fragpdf.state.annots.length === 0);
+  await page.click('.ed-top .btn:has-text("Fichier")');
+  const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('.menu-item:has-text("Insérer un PDF")')]);
+  await fc.setFiles(path.join(FIX, 'sample.pdf'));
+  await page.waitForFunction(() => window.__fragpdf.state.pages.length === 4);
+});
+await test('raccourcis clavier des outils', async () => {
+  await openEditor();
+  await page.keyboard.press('r');
+  eq(await page.evaluate(() => window.__fragpdf.state.tool), 'rect');
+  await page.keyboard.press('e');
+  eq(await page.evaluate(() => window.__fragpdf.state.tool), 'edittext');
+  await page.keyboard.press('Escape');
+  eq(await page.evaluate(() => window.__fragpdf.state.tool), 'select');
+});
+await test('recherche dans le document', async () => {
+  await openEditor();
+  await page.keyboard.press('Control+f');
+  await page.fill('.findbar input', 'montant');
+  await page.waitForFunction(() => document.querySelector('.find-count')?.textContent.includes('/ 3'));
+});
+await test('réorganisation des pages par glisser-déposer', async () => {
+  await openEditor();
+  await page.evaluate(() => window.__fragpdf.state.addAnnot({ type: 'rect', page: 2, x: 50, y: 50, w: 100, h: 80, stroke: '#f00', strokeW: 2, fill: null }, { select: false }));
+  await page.dragAndDrop('.thumb:nth-child(3)', '.thumb:nth-child(1)');
+  await page.waitForFunction(() => window.__fragpdf.state.annots[0]?.page === 0);
+});
+
 console.log('\n— Outils —');
 await test('fusionner', async () => {
   const [f] = await runTool('merge', ['sample.pdf', 'form.pdf']);
@@ -231,6 +300,36 @@ await test('images → PDF et PDF → images', async () => {
 await test('métadonnées', async () => {
   const [f] = await runTool('metadata', ['sample.pdf'], { setup: async (p) => { await p.fill('.field:has(span:text-is("Titre")) input', 'Mon titre'); } });
   eq((await PDFDocument.load(fs.readFileSync(f))).getTitle(), 'Mon titre');
+});
+await test('compresser un PDF lourd : poids réduit, pages conservées', async () => {
+  const before = fs.statSync(path.join(FIX, 'heavy.pdf')).size;
+  const [f] = await runTool('compress', ['heavy.pdf']);
+  const after = fs.statSync(f).size;
+  ok(after < before * 0.7, `${before} → ${after}`);
+  eq((await PDFDocument.load(fs.readFileSync(f))).getPageCount(), 4);
+  const txt = await textOfBytes(fs.readFileSync(f));
+  ok(txt[0].includes('Page avec image'), 'le texte reste vectoriel : ' + txt[0]);
+});
+await test('supprimer les pages blanches', async () => {
+  const [f] = await runTool('remove-blank', ['heavy.pdf']);
+  eq((await PDFDocument.load(fs.readFileSync(f))).getPageCount(), 3);
+});
+await test('plusieurs pages par feuille', async () => {
+  const [f] = await runTool('nup', ['sample.pdf']);
+  eq((await PDFDocument.load(fs.readFileSync(f))).getPageCount(), 2);
+});
+await test('changer le format (Letter)', async () => {
+  const [f] = await runTool('resize', ['sample.pdf'], { setup: async (p) => { await p.selectOption('.panel select >> nth=0', 'letter'); } });
+  const pg = (await PDFDocument.load(fs.readFileSync(f))).getPage(0).getSize();
+  ok(Math.abs(pg.width - 612) < 1 && Math.abs(pg.height - 792) < 1, JSON.stringify(pg));
+});
+await test('niveaux de gris', async () => {
+  const [f] = await runTool('grayscale', ['sample.pdf']);
+  eq((await PDFDocument.load(fs.readFileSync(f))).getPageCount(), 3);
+});
+await test('extraire les images', async () => {
+  const [f] = await runTool('extract-images', ['heavy.pdf']);
+  ok(f.endsWith('.zip') || f.endsWith('.png'), f);
 });
 await test('PDF → texte et PDF → Word', async () => {
   const [t] = await runTool('pdf2text', ['sample.pdf']);

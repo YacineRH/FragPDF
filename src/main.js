@@ -38,3 +38,8 @@ async function route() {
 
 window.addEventListener('hashchange', route);
 route();
+
+// Service worker : usage hors ligne (en production uniquement)
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+}

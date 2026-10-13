@@ -51,3 +51,36 @@ async function rotated() {
 
 await sample(); await form(); await rotated();
 console.log('Fixtures générées.');
+
+// PDF « lourd » : images JPEG/PNG bruitées + pages blanches pour tester compression, extraction et détection.
+async function heavy() {
+  const { deflateSync } = await import('node:zlib');
+  const doc = await PDFDocument.create();
+  const helv = await doc.embedFont(StandardFonts.Helvetica);
+  // image PNG 900×600 bruitée (non compressible = gros)
+  const W = 900, H = 600;
+  const raw = Buffer.alloc((W * 3 + 1) * H);
+  for (let y = 0; y < H; y++) {
+    raw[y * (W * 3 + 1)] = 0;
+    for (let x = 0; x < W; x++) {
+      const o = y * (W * 3 + 1) + 1 + x * 3;
+      raw[o] = (x * 255 / W + Math.random() * 60) & 255; raw[o + 1] = (y * 255 / H + Math.random() * 60) & 255; raw[o + 2] = (128 + Math.random() * 90) & 255;
+    }
+  }
+  const crc = (buf) => { let c, crcT = []; for (let n = 0; n < 256; n++) { c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; crcT[n] = c >>> 0; } let r = 0xffffffff; for (const b of buf) r = crcT[(r ^ b) & 255] ^ (r >>> 8); return (r ^ 0xffffffff) >>> 0; };
+  const chunk = (type, data) => { const len = Buffer.alloc(4); len.writeUInt32BE(data.length); const td = Buffer.concat([Buffer.from(type), data]); const c = Buffer.alloc(4); c.writeUInt32BE(crc(td)); return Buffer.concat([len, td, c]); };
+  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(W, 0); ihdr.writeUInt32BE(H, 4); ihdr[8] = 8; ihdr[9] = 2;
+  const png = Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
+  writeFileSync('scripts/fixtures/noise.png', png);
+  const img = await doc.embedPng(png);
+  for (let i = 0; i < 2; i++) {
+    const p = doc.addPage([595, 842]);
+    p.drawText(`Page avec image ${i + 1}`, { x: 40, y: 800, size: 18, font: helv });
+    p.drawImage(img, { x: 40, y: 300, width: 515, height: 343 });
+  }
+  doc.addPage([595, 842]); // page blanche
+  const p4 = doc.addPage([595, 842]);
+  p4.drawText('Dernière page', { x: 40, y: 800, size: 18, font: helv });
+  writeFileSync('scripts/fixtures/heavy.pdf', await doc.save());
+}
+await heavy();
