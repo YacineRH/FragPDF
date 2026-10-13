@@ -8,6 +8,7 @@ import { launch } from './shot.mjs';
 const PORT = 4199;
 const URL = `http://localhost:${PORT}/`;
 const FIX = path.resolve('scripts/fixtures');
+await import('./make-fixtures.mjs');
 if (!fs.existsSync('dist/index.html')) throw new Error('Lancez d’abord « npm run build ».');
 const server = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], { stdio: 'ignore' });
 process.on('exit', () => server.kill());
