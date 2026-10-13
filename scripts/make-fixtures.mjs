@@ -110,3 +110,13 @@ async function pair() {
   }
 }
 await pair();
+
+async function table() {
+  const doc = await PDFDocument.create();
+  const helv = await doc.embedFont(StandardFonts.Helvetica);
+  const p = doc.addPage([595, 842]);
+  const rows = [['Produit', 'Quantité', 'Prix', 'Total'], ['Stylo bleu', '10', '1,50', '15,00'], ['Cahier A4', '5', '2,20', '11,00'], ['Classeur', '2', '4,80', '9,60'], ['Agrafeuse', '1', '12,90', '12,90']];
+  rows.forEach((r, i) => r.forEach((c, j) => p.drawText(c, { x: 50 + j * 120, y: 760 - i * 24, size: 12, font: helv })));
+  writeFileSync('scripts/fixtures/table.pdf', await doc.save());
+}
+await table();

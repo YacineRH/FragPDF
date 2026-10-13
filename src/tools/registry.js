@@ -46,6 +46,7 @@ export const TOOLS = [
   { id: 'pdf2img', cat: 'convert', icon: 'file', title: 'PDF → Images', desc: 'Exportez chaque page en PNG, JPG ou WebP (archive ZIP).', load: () => import('./convert.js').then((m) => m.pdfToImg) },
   { id: 'extract-images', cat: 'convert', icon: 'image', title: 'Extraire les images', desc: 'Récupérez toutes les images intégrées au PDF (archive ZIP).', badge: 'Nouveau', load: () => import('./extra.js').then((m) => m.extractImages) },
   { id: 'pdf2word', cat: 'convert', icon: 'book', title: 'PDF → Word', desc: 'Extrait le texte et les titres vers un document .docx.', load: () => import('./convert.js').then((m) => m.pdfToWord) },
+  { id: 'pdf2excel', cat: 'convert', icon: 'grid', title: 'PDF → Excel', desc: 'Détecte les tableaux et les exporte en .xlsx ou CSV.', badge: 'Nouveau', load: () => import('./convert.js').then((m) => m.pdfToExcel) },
   { id: 'pdf2text', cat: 'convert', icon: 'list', title: 'PDF → Texte', desc: 'Extrait tout le texte dans un fichier .txt.', load: () => import('./convert.js').then((m) => m.pdfToTxt) },
   { id: 'txt2pdf', cat: 'convert', icon: 'text', title: 'Texte → PDF', desc: 'Transforme un texte ou fichier .txt en PDF paginé.', load: () => import('./convert.js').then((m) => m.txtToPdf) },
   // Sécurité

@@ -84,7 +84,7 @@ identiques à l'écran), images, tracés vectoriels, surlignage en mode *Multipl
   du PDF (le texte d'origine reste présent sous l'aplat — utilisez le *caviardage* pour une suppression définitive).
 - Les polices intégrées couvrent l'alphabet latin (français, anglais, espagnol, allemand… ). Les alphabets non latins ne sont pas pris en charge à l'écriture.
 - *PDF → Word* extrait le texte et les titres, pas la mise en page.
-- L'OCR télécharge une fois les données de langue (Tesseract) depuis Internet ; les pages, elles, restent locales.
+- L'OCR fonctionne **hors ligne en français et en anglais** (moteur et modèles embarqués). Les autres langues téléchargent une fois leur modèle depuis le CDN officiel de Tesseract ; les pages, elles, restent locales.
 
 ## Licences
 

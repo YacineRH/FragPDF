@@ -2,7 +2,7 @@ import { h, baseName, readFileBytes, formatBytes } from '../lib/utils.js';
 import { t } from '../i18n.js';
 import { fileTool, ui, outName } from './framework.js';
 import { imagesToPdf, textToPdf, PAGE_SIZES } from '../lib/pdf-ops.js';
-import { pdfToImages, imagesToZip, pdfToText, pdfToDocx } from '../lib/convert.js';
+import { pdfToImages, imagesToZip, pdfToText, pdfToDocx, pdfToTables, tablesToCsv, tablesToXlsx } from '../lib/convert.js';
 import { FONTS } from '../lib/fonts.js';
 
 export const imgToPdf = fileTool({
@@ -80,5 +80,23 @@ export const txtToPdf = fileTool({
     const text = await f.file.text();
     const bytes = await textToPdf(text, opts);
     return { title: t('PDF créé !'), outputs: [{ name: `${baseName(f.name)}.pdf`, data: bytes }] };
+  },
+});
+
+export const pdfToExcel = fileTool({
+  accept: 'pdf', multiple: false, runLabel: 'Convertir en Excel', runIcon: 'grid',
+  options: () => {
+    const fmt = ui.select([['xlsx', 'Excel (.xlsx)'], ['csv', 'CSV (;)']], 'xlsx');
+    return { el: h('div', {}, ui.field(t('Format'), fmt), ui.note(t('Les colonnes sont détectées d’après l’alignement du texte : idéal pour les relevés et tableaux simples. Un PDF scanné nécessite d’abord l’OCR.'))), get: () => ({ fmt: fmt.value }) };
+  },
+  async run({ files, opts, progress }) {
+    const f = files[0];
+    progress(0.3, t('Analyse des tableaux…'));
+    const sheets = await pdfToTables(f.bytes);
+    const cells = sheets.flat().reduce((s, r) => s + r.filter(Boolean).length, 0);
+    if (!cells) throw new Error(t('Aucun texte trouvé : ce PDF est probablement un scan. Essayez l’outil OCR.'));
+    const stats = [{ label: t('Lignes'), value: String(sheets.reduce((s, r) => s + r.length, 0)) }, { label: t('Cellules'), value: String(cells) }];
+    if (opts.fmt === 'csv') return { title: t('CSV créé !'), outputs: [{ name: `${baseName(f.name)}.csv`, data: new Blob([tablesToCsv(sheets)], { type: 'text/csv;charset=utf-8' }) }], stats };
+    return { title: t('Classeur Excel créé !'), outputs: [{ name: `${baseName(f.name)}.xlsx`, data: await tablesToXlsx(sheets) }], stats };
   },
 });

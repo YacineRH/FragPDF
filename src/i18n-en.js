@@ -168,4 +168,7 @@ export default {
   'Capturer': 'Capture', 'Importer des photos': 'Import photos', 'Télécharger le PDF': 'Download the PDF', 'Amélioration': 'Enhancement', 'Document': 'Document', 'Gris': 'Gray', 'Noir & blanc': 'Black & white', 'Couleur': 'Color',
   'Posez le document sur une surface plane, bien éclairé. « Document » éclaircit le fond et renforce le texte.': 'Place the document on a flat, well-lit surface. “Document” lightens the background and strengthens the text.', 'Avant': 'Before',
   'Vos fichiers sont traités dans votre navigateur et ne sont jamais envoyés sur un serveur.': 'Your files are processed in your browser and never sent to a server.', 'Licence MIT': 'MIT license',
+  'PDF → Excel': 'PDF → Excel', 'Détecte les tableaux et les exporte en .xlsx ou CSV.': 'Detects tables and exports them as .xlsx or CSV.', 'Convertir en Excel': 'Convert to Excel', 'Analyse des tableaux…': 'Analyzing tables…',
+  'Les colonnes sont détectées d’après l’alignement du texte : idéal pour les relevés et tableaux simples. Un PDF scanné nécessite d’abord l’OCR.': 'Columns are detected from text alignment: ideal for statements and simple tables. A scanned PDF needs OCR first.',
+  'Lignes': 'Rows', 'Cellules': 'Cells', 'CSV créé !': 'CSV created!', 'Classeur Excel créé !': 'Excel workbook created!',
 };

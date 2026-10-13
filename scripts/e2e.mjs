@@ -422,6 +422,13 @@ await test('OCR hors ligne (français) : un PDF image devient cherchable', async
   const txt = (await textOfBytes(fs.readFileSync(f)))[0];
   ok(/Facture|Soci[eé]t[eé]|Exemple/i.test(txt), 'texte reconnu : ' + txt.slice(0, 120));
 });
+await test('PDF → Excel : colonnes détectées', async () => {
+  const [f] = await runTool('pdf2excel', ['table.pdf'], { setup: async (p) => { await p.selectOption('.panel select >> nth=0', 'csv'); } });
+  const csv = fs.readFileSync(f, 'utf8');
+  ok(/Produit;Quantité;Prix;Total/.test(csv) && /Stylo bleu;10;1,50;15,00/.test(csv), csv.slice(0, 200));
+  const [x] = await runTool('pdf2excel', ['table.pdf']);
+  ok(fs.statSync(x).size > 800 && x.endsWith('.xlsx'), x);
+});
 await test('PDF → texte et PDF → Word', async () => {
   const [t] = await runTool('pdf2text', ['sample.pdf']);
   ok(fs.readFileSync(t, 'utf8').includes('Facture'));

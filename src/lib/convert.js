@@ -111,3 +111,77 @@ export async function pdfToDocx(bytes, password) {
   zip.file('word/document.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${xml}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>`);
   return zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
 }
+
+/* ---------- PDF → tableaux (Excel / CSV) ---------- */
+
+/** Détecte les colonnes d'une page par regroupement des abscisses de début des éléments de texte. */
+export async function pdfToTables(bytes, password) {
+  const pdf = await openPdf(bytes, password);
+  const sheets = [];
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const tc = await page.getTextContent();
+    const items = tc.items.filter((it) => it.str.trim()).map((it) => ({ str: it.str, x: it.transform[4], y: it.transform[5], w: it.width, h: it.height || 10 }));
+    // lignes (même ordonnée)
+    const lines = [];
+    for (const it of items.sort((a, b) => b.y - a.y || a.x - b.x)) {
+      const l = lines.find((q) => Math.abs(q.y - it.y) < Math.max(2, it.h * 0.4));
+      if (l) l.items.push(it); else lines.push({ y: it.y, items: [it] });
+    }
+    lines.forEach((l) => l.items.sort((a, b) => a.x - b.x));
+    // fusionne les fragments contigus d'une même cellule (écart faible)
+    const cells = lines.map((l) => {
+      const out = [];
+      for (const it of l.items) {
+        const last = out[out.length - 1];
+        if (last && it.x - (last.x + last.w) < Math.max(it.h * 0.9, 4)) { last.str += (it.x - (last.x + last.w) > it.h * 0.15 ? ' ' : '') + it.str; last.w = it.x + it.w - last.x; }
+        else out.push({ ...it });
+      }
+      return out;
+    });
+    // ancres de colonnes : abscisses de début les plus fréquentes
+    const starts = cells.flat().map((c) => c.x).sort((a, b) => a - b);
+    const anchors = [];
+    for (const x of starts) {
+      const a = anchors[anchors.length - 1];
+      if (a && x - a.last < 6) { a.xs.push(x); a.last = x; } else anchors.push({ xs: [x], last: x });
+    }
+    const cols = anchors.filter((a) => a.xs.length >= Math.max(2, Math.min(4, cells.length * 0.15))).map((a) => a.xs.reduce((s, v) => s + v, 0) / a.xs.length);
+    if (!cols.length) cols.push(0);
+    const rows = cells.map((row) => {
+      const r = new Array(cols.length).fill('');
+      for (const c of row) {
+        let k = 0;
+        for (let i = 0; i < cols.length; i++) if (c.x >= cols[i] - 6) k = i;
+        r[k] = r[k] ? `${r[k]} ${c.str}` : c.str;
+      }
+      return r;
+    }).filter((r) => r.some(Boolean));
+    sheets.push(rows);
+    page.cleanup();
+  }
+  pdf.destroy();
+  return sheets;
+}
+
+export function tablesToCsv(sheets) {
+  const q = (s) => (/[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
+  return '﻿' + sheets.map((rows) => rows.map((r) => r.map(q).join(';')).join('\r\n')).join('\r\n\r\n');
+}
+
+const colName = (i) => { let s = ''; for (i++; i > 0; i = Math.floor((i - 1) / 26)) s = String.fromCharCode(65 + ((i - 1) % 26)) + s; return s; };
+
+/** Classeur .xlsx minimal (une feuille par page), nombres reconnus. */
+export async function tablesToXlsx(sheets) {
+  const zip = new JSZip();
+  const num = (s) => { const n = s.replace(/\s/g, '').replace(',', '.').replace(/[€$%]$/, ''); return /^-?\d+(\.\d+)?$/.test(n) && n.length < 16 ? n : null; };
+  zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`);
+  zip.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>');
+  zip.file('xl/workbook.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map((_, i) => `<sheet name="Page ${i + 1}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets></workbook>`);
+  zip.file('xl/_rels/workbook.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}</Relationships>`);
+  sheets.forEach((rows, i) => {
+    const body = rows.map((r, ri) => `<row r="${ri + 1}">${r.map((c, ci) => { if (!c) return ''; const ref = `${colName(ci)}${ri + 1}`; const n = num(c); return n !== null ? `<c r="${ref}"><v>${n}</v></c>` : `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${esc(c)}</t></is></c>`; }).join('')}</row>`).join('');
+    zip.file(`xl/worksheets/sheet${i + 1}.xml`, `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${body}</sheetData></worksheet>`);
+  });
+  return zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
