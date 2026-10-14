@@ -9,6 +9,8 @@ import { groupLines } from '../lib/convert.js';
 import { wordDiff } from '../lib/diff.js';
 import { progressModal } from '../ui/modal.js';
 import { toastError } from '../ui/toast.js';
+import { trackUse } from '../lib/stats.js';
+import { askRating } from '../ui/rating.js';
 
 const SCALE = 1.3;
 
@@ -88,6 +90,7 @@ export const compare = {
         cur = Math.max(0, results.findIndex((r) => !r.same));
       } catch (e) { console.error(e); toastError(e.message || String(e)); } finally { pm.close(); }
       render();
+      if (results.length) { trackUse('compare'); askRating(); }
     }
 
     async function exportReport() {

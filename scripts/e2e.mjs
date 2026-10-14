@@ -11,7 +11,7 @@ const FIX = path.resolve('scripts/fixtures');
 const TMP = fs.mkdtempSync('/tmp/fragpdf-e2e-');
 
 await import('./make-fixtures.mjs');
-const server = spawn('npx', ['vite', '--port', String(PORT), '--strictPort'], { stdio: 'ignore' });
+const server = spawn('npx', ['vite', '--port', String(PORT), '--strictPort'], { stdio: 'ignore', env: { ...process.env, VITE_GOATCOUNTER: 'testsite' } });
 const stop = () => server.kill();
 process.on('exit', stop);
 for (let i = 0; i < 60; i++) { try { await fetch(URL); break; } catch { await new Promise((r) => setTimeout(r, 500)); } }
@@ -448,6 +448,35 @@ await test('PDF → Excel : colonnes détectées', async () => {
   ok(/Produit;Quantité;Prix;Total/.test(csv) && /Stylo bleu;10;1,50;15,00/.test(csv), csv.slice(0, 200));
   const [x] = await runTool('pdf2excel', ['table.pdf']);
   ok(fs.statSync(x).size > 800 && x.endsWith('.xlsx'), x);
+});
+await test('statistiques anonymes, notation par étoiles et score public', async () => {
+  const b = await (await import('playwright-core')).chromium.launch({ executablePath: CHROME_PATH, args: ['--no-sandbox'] });
+  const ctx2 = await b.newContext({ acceptDownloads: true, locale: 'fr-FR' });
+  const p2 = await ctx2.newPage();
+  const hits = [];
+  await p2.route('https://testsite.goatcounter.com/**', (route) => {
+    const u = new globalThis.URL(route.request().url());
+    if (u.pathname === '/count') { hits.push(u.searchParams.get('p') + (u.searchParams.get('e') ? '|event' : '')); return route.fulfill({ status: 200, contentType: 'image/gif', body: Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64') }); }
+    const m = decodeURIComponent(u.pathname).match(/counter\/\/?(.+)\.json/);
+    const table = { 'rating-5': '8', 'rating-4': '2', 'rating-3': '0', 'rating-2': '0', 'rating-1': '0', uses: '1 250' };
+    return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ count: table[m?.[1]] ?? '0' }) });
+  });
+  await p2.goto(URL);
+  await p2.waitForSelector('.score-badge', { timeout: 10000 });
+  const badge = await p2.innerText('.score-badge');
+  ok(/4,8/.test(badge) && /10 avis/.test(badge) && /1[\s\u202f\u00a0]250 utilisations/.test(badge), 'score : ' + badge);
+  await p2.goto(URL + '#/tool/merge');
+  await p2.waitForSelector('.dropzone input[type=file]', { state: 'attached' });
+  await p2.setInputFiles('.dropzone input[type=file]', [path.join(FIX, 'sample.pdf'), path.join(FIX, 'form.pdf')]);
+  await p2.waitForSelector('.run-btn');
+  await p2.click('.run-btn');
+  await p2.waitForSelector('.rating-card', { timeout: 10000 });
+  await p2.click('.rating-card .star:nth-child(5)');
+  await p2.waitForTimeout(500);
+  ok(hits.includes('/tool/merge'), 'page vue : ' + hits);
+  ok(hits.includes('use-merge|event') && hits.includes('uses|event'), 'utilisation : ' + hits);
+  ok(hits.includes('rating-5|event'), 'note : ' + hits);
+  await b.close();
 });
 await test('PDF → texte et PDF → Word', async () => {
   const [t] = await runTool('pdf2text', ['sample.pdf']);

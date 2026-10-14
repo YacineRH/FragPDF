@@ -39,6 +39,19 @@ Vos contrats, factures et pièces d'identité ne quittent jamais votre appareil.
 - **Convertir** : images → PDF, PDF → images (PNG/JPG/WebP, ZIP), PDF → Word (.docx), PDF → Excel (.xlsx / CSV), PDF → texte, texte → PDF, extraction des images, **scanner** (caméra → PDF avec amélioration)
 - **Sécurité** : protection par mot de passe **AES-256** avec permissions, déverrouillage, métadonnées, nettoyage (scripts, pièces jointes, métadonnées), aplatissement des formulaires
 
+## Statistiques d'usage et notes (optionnel)
+
+FragPDF peut afficher un **score public** (note moyenne en étoiles, nombre d'avis et d'utilisations) et vous donner le nombre de visites par pays,
+sans serveur à vous et sans cookie, grâce à [GoatCounter](https://www.goatcounter.com) (gratuit, respectueux de la vie privée).
+
+1. Créez un compte GoatCounter ; notez le code du site (ex. `yratech` pour `yratech.goatcounter.com`).
+2. Dans ses réglages, activez **Allow adding visitor counts on your website** (pour afficher le score) et, si vous voulez, **Allow public viewing of statistics**.
+3. Renseignez le code dans `src/config.js` (`GOATCOUNTER_CODE`) ou via la variable `VITE_GOATCOUNTER` au build, puis redéployez.
+
+Ce qui est envoyé : la page ou l'outil utilisé, la note donnée (1 à 5 étoiles) et, côté serveur GoatCounter, le pays déduit de l'adresse IP (qui n'est pas conservée).
+**Jamais** de fichier ni de contenu. Le réglage « Ne pas suivre » du navigateur est respecté et un lien du pied de page permet de se désinscrire.
+Sans code, aucune requête de statistique n'est émise.
+
 ## Démarrage
 
 ```bash

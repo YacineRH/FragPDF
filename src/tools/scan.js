@@ -8,6 +8,8 @@ import { toastError } from '../ui/toast.js';
 import { progressModal } from '../ui/modal.js';
 import { setPending } from '../lib/session.js';
 import { navigate } from '../ui/chrome.js';
+import { trackUse } from '../lib/stats.js';
+import { askRating } from '../ui/rating.js';
 
 /** Applique le filtre choisi ('color' | 'gray' | 'doc' | 'bw') à un canvas (copie). */
 export function applyFilter(src, filter) {
@@ -109,6 +111,7 @@ export const scan = {
         const bytes = await save(doc);
         if (openEditor) { setPending({ name: 'scan.pdf', bytes, pages: pages.length, size: bytes.length }); navigate('/editor'); }
         else downloadBlob(new Blob([bytes], { type: 'application/pdf' }), 'scan.pdf');
+        trackUse('scan'); askRating();
       } catch (e) { toastError(e.message || String(e)); } finally { pm.close(); }
     }
 

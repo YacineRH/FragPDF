@@ -132,3 +132,15 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--accent); width
 .kbd { font-size: .72rem; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 6px; padding: 0 .4rem; background: var(--surface-2); }
 
 @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+/* Notation par étoiles */
+.rating-card { position: fixed; right: 20px; bottom: 20px; z-index: 1500; width: min(320px, calc(100vw - 32px)); padding: 1rem 1.1rem .9rem; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow-lg); display: grid; gap: .45rem; transform: translateY(16px); opacity: 0; transition: all .28s; }
+.rating-card.in { transform: none; opacity: 1; }
+.rating-x { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; }
+.stars { display: flex; gap: 2px; }
+.star { border: 0; background: transparent; padding: 2px; color: var(--surface-3); cursor: pointer; transition: transform .1s, color .12s; }
+.star svg { fill: currentColor; stroke: currentColor; }
+.star.on { color: #f5b301; } .star:hover { transform: scale(1.18); }
+.score-badge { display: inline-flex; align-items: center; gap: .5rem; flex-wrap: wrap; justify-content: center; padding: .35rem .9rem; border-radius: 99px; background: var(--surface); border: 1px solid var(--border); font-size: .88rem; box-shadow: var(--shadow-sm); }
+.score-badge svg { color: #f5b301; fill: #f5b301; stroke: #f5b301; }
+.score-badge b { font-size: 1rem; }

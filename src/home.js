@@ -6,6 +6,8 @@ import { CATEGORIES, TOOLS } from './tools/registry.js';
 import { loadPdfFile, isPdf } from './lib/ingest.js';
 import { setPending } from './lib/session.js';
 import { toastError } from './ui/toast.js';
+import { fetchPublicScore, statsEnabled, trackingAllowed } from './lib/stats.js';
+import { prefs } from './lib/session.js';
 
 export function toolHref(tool) {
   return tool.kind === 'editor' ? `#/editor?tool=${tool.preset}` : `#/tool/${tool.id}`;
@@ -39,6 +41,16 @@ export function mount(root) {
   drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
   drop.addEventListener('dragleave', () => drop.classList.remove('over'));
   drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); openFile(e.dataTransfer.files[0]); });
+
+  // score public : note moyenne + nombre d'utilisations (si les statistiques sont configurées)
+  const scoreHost = h('div', { style: { marginTop: '1rem', minHeight: '2rem' } });
+  fetchPublicScore().then((s) => {
+    if (!s) return;
+    const nf = new Intl.NumberFormat(document.documentElement.lang === 'en' ? 'en' : 'fr');
+    scoreHost.append(h('span', { class: 'score-badge' },
+      s.average !== null ? [icon('star', 16), h('b', {}, s.average.toFixed(1).replace('.', document.documentElement.lang === 'en' ? '.' : ',')), h('span', { class: 'muted' }, `· ${nf.format(s.votes)} ${t('avis')}`)] : null,
+      s.uses ? h('span', { class: 'muted' }, `${s.average !== null ? '· ' : ''}${nf.format(s.uses)} ${t('utilisations')}`) : null));
+  });
 
   const search = h('input', { class: 'input', type: 'search', placeholder: t('Rechercher un outil…'), 'aria-label': t('Rechercher un outil…') });
   const catsHost = h('div', {});
@@ -77,6 +89,7 @@ export function mount(root) {
           h('span', {}, icon('check', 16), t('Gratuit, sans compte')),
           h('span', {}, icon('check', 16), t('Pas de limite de taille')),
           h('span', {}, icon('check', 16), t('Fonctionne hors ligne'))),
+        scoreHost,
         h('div', { class: 'search-wrap' }, icon('search', 18), search)),
       catsHost,
       h('section', { class: 'features' },
@@ -87,6 +100,10 @@ export function mount(root) {
       h('footer', { class: 'footer' },
         h('p', {}, h('b', {}, 'FragPDF'), ' — ', t('fait avec soin.')),
         h('p', { class: 'muted' }, t('Vos fichiers sont traités dans votre navigateur et ne sont jamais envoyés sur un serveur.')),
+        statsEnabled() ? h('p', { class: 'muted' }, t('Statistiques anonymes (pages vues, pays, notes), sans cookie ni donnée personnelle. '), (() => {
+          const b = h('a', { href: '#', onclick: (e) => { e.preventDefault(); prefs.set('stats-optout', trackingAllowed()); b.textContent = trackingAllowed() ? t('Désactiver') : t('Réactiver'); } }, trackingAllowed() ? t('Désactiver') : t('Réactiver'));
+          return b;
+        })()) : null,
         h('p', {}, h('a', { href: 'https://github.com/YacineRH/FragPDF', target: '_blank', rel: 'noopener' }, 'GitHub'), ' · ', h('a', { href: 'https://github.com/YacineRH/FragPDF/blob/main/LICENSE', target: '_blank', rel: 'noopener' }, t('Licence MIT'))))));
   root.append(page);
   return () => { document.removeEventListener('dragover', onDragOver); document.removeEventListener('drop', onDrop); };

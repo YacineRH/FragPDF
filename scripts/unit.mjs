@@ -123,3 +123,11 @@ test('rotation d’annotations avec la page (rigide + zones)', () => {
   for (const k of ['x', 'y', 'w', 'h']) assert.ok(Math.abs(a[k] - orig[k]) < 1e-6, k);
   assert.ok(Math.abs(((a.rot - orig.rot + 360) % 360)) < 1e-6);
 });
+
+test('statistiques : lecture des compteurs', async () => {
+  globalThis.navigator ??= { doNotTrack: null };
+  const { parseCount } = await import('../src/lib/stats.js');
+  assert.equal(parseCount('1 234'), 1234);
+  assert.equal(parseCount('12'), 12);
+  assert.equal(parseCount(undefined), 0);
+});

@@ -171,4 +171,7 @@ export default {
   'PDF → Excel': 'PDF → Excel', 'Détecte les tableaux et les exporte en .xlsx ou CSV.': 'Detects tables and exports them as .xlsx or CSV.', 'Convertir en Excel': 'Convert to Excel', 'Analyse des tableaux…': 'Analyzing tables…',
   'Les colonnes sont détectées d’après l’alignement du texte : idéal pour les relevés et tableaux simples. Un PDF scanné nécessite d’abord l’OCR.': 'Columns are detected from text alignment: ideal for statements and simple tables. A scanned PDF needs OCR first.',
   'Lignes': 'Rows', 'Cellules': 'Cells', 'CSV créé !': 'CSV created!', 'Classeur Excel créé !': 'Excel workbook created!',
+  'avis': 'reviews', 'utilisations': 'uses', 'Merci ! Votre avis compte beaucoup.': 'Thank you! Your feedback means a lot.', 'Merci pour votre retour, nous allons nous améliorer.': 'Thanks for your feedback, we will do better.',
+  'Donner une note': 'Leave a rating', 'Cette opération vous a été utile ?': 'Was this useful?', 'Note anonyme, aucun fichier n’est envoyé.': 'Anonymous rating, no file is sent.', 'Merci de votre retour.': 'Thanks for your feedback.',
+  'Statistiques anonymes (pages vues, pays, notes), sans cookie ni donnée personnelle. ': 'Anonymous statistics (page views, country, ratings), no cookies or personal data. ', 'Désactiver': 'Turn off', 'Réactiver': 'Turn on',
 };

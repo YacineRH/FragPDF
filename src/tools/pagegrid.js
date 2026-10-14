@@ -11,6 +11,8 @@ import { toastError, toast } from '../ui/toast.js';
 import { setPending, takePending } from '../lib/session.js';
 import { navigate } from '../ui/chrome.js';
 import { ui } from './framework.js';
+import { trackUse } from '../lib/stats.js';
+import { askRating } from '../ui/rating.js';
 
 function gridTool(cfg) {
   return {
@@ -115,6 +117,8 @@ function gridTool(cfg) {
       const extraState = () => extraCtl?.get?.() ?? {};
 
       function done(out) {
+        trackUse(cfg.id || 'pagegrid');
+        askRating();
         host.replaceChildren();
         const acts = h('div', { class: 'actions' });
         if (out.outputs.length === 1) {
@@ -195,6 +199,7 @@ function gridTool(cfg) {
 const fileName = (doc, suffix) => `${baseName(doc.name)}-${suffix}.pdf`;
 
 export const organize = gridTool({
+  id: 'organize',
   reorder: true, rotate: true, duplicate: true, blank: true, remove: true, select: true,
   saveLabel: 'Enregistrer le nouvel ordre', icon: 'save',
   hint: 'Glissez les pages pour les réordonner. Survolez une page pour pivoter, dupliquer, ajouter une page blanche ou supprimer.',
@@ -208,6 +213,7 @@ export const organize = gridTool({
 });
 
 export const extract = gridTool({
+  id: 'extract',
   select: true, icon: 'files', saveLabel: 'Extraire les pages sélectionnées',
   hint: 'Cliquez sur les pages à extraire (Maj + clic pour une plage, ou saisissez une plage puis Entrée).',
   extra: () => {
@@ -227,6 +233,7 @@ export const extract = gridTool({
 });
 
 export const remove = gridTool({
+  id: 'remove',
   select: true, remove: false, icon: 'trash', saveLabel: 'Supprimer les pages sélectionnées',
   hint: 'Cliquez sur les pages à supprimer du document.',
   async save({ doc, selected }) {
@@ -237,6 +244,7 @@ export const remove = gridTool({
 });
 
 export const rotate = gridTool({
+  id: 'rotate',
   select: true, rotate: true, icon: 'rotate', saveLabel: 'Enregistrer les rotations',
   hint: 'Sans sélection, les boutons agissent sur toutes les pages. Sinon uniquement sur les pages sélectionnées.',
   async save({ doc, pages }) {

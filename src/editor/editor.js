@@ -23,6 +23,8 @@ import { loadAllPreviewFonts } from '../lib/fonts.js';
 import { uid, debounce } from '../lib/utils.js';
 import { saveSession, loadSession, clearSession } from '../lib/autosave.js';
 import { scanDocument } from './autoredact.js';
+import { trackUse } from '../lib/stats.js';
+import { askRating } from '../ui/rating.js';
 
 const RAIL = [
   [['select', 'cursor', 'V'], ['edittext', 'textedit', 'E']],
@@ -521,6 +523,8 @@ export async function mount(root, { query }) {
               downloadBlob(new Blob([bytes], { type: 'application/pdf' }), fn);
               state.dirty = false;
               clearSession();
+              trackUse('editor');
+              askRating(1800);
               pm.close();
               close();
               toast(t('PDF enregistré ({size}).', { size: formatBytes(bytes.length) }), 'success');

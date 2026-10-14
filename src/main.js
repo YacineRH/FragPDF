@@ -5,6 +5,7 @@ import './styles/editor.css';
 import { initLang, t } from './i18n.js';
 import { h } from './lib/utils.js';
 import { toastError } from './ui/toast.js';
+import { trackPage } from './lib/stats.js';
 
 await initLang();
 
@@ -31,6 +32,7 @@ async function route() {
     if (my !== token) return;
     const params = path.startsWith('/tool/') ? { id: path.slice(6), query } : { query };
     cleanup = (await mod.mount(app, params)) || null;
+    trackPage(path === '/' ? '/' : path);
   } catch (e) {
     console.error(e);
     app.replaceChildren(h('div', { class: 'home' }, h('h2', {}, t('Oups, une erreur est survenue')), h('pre', {}, String(e?.stack || e)), h('a', { class: 'btn', href: '#/' }, t('Accueil'))));

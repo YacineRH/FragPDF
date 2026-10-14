@@ -8,6 +8,8 @@ import { progressModal } from '../ui/modal.js';
 import { toastError } from '../ui/toast.js';
 import { setPending, takePending } from '../lib/session.js';
 import { navigate } from '../ui/chrome.js';
+import { trackUse } from '../lib/stats.js';
+import { askRating } from '../ui/rating.js';
 
 const MIME = { pdf: 'application/pdf', zip: 'application/zip', txt: 'text/plain', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
 
@@ -87,6 +89,8 @@ export function fileTool(def) {
           const result = await def.run({ files: state.files, opts, progress: (p, txt) => pm.set(p, txt) });
           pm.close();
           showResult(result);
+          trackUse(meta.id);
+          askRating();
         } catch (e) {
           pm.close();
           console.error(e);
